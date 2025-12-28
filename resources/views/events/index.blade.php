@@ -1,0 +1,522 @@
+@extends('layouts.app')
+
+@section('title', 'Events | SignUpGo')
+
+@section('styles')
+<style>
+    .container { 
+        max-width: 1200px;
+        width: 100%;
+    }
+    
+    .search-box {
+        background: rgb(255, 255, 255);
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+    
+    .search-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-group label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+    }
+    
+    .form-group input,
+    .form-group select {
+        padding: 0.6rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.9rem;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+    
+    .btn-search {
+        padding: 0.6rem 1.5rem;
+        background: #3aa93a;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-search:hover {
+        background: #2c8a2c;
+    }
+    
+    .btn-clear {
+        padding: 0.6rem 1.5rem;
+        background: #95a5a6;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-clear:hover {
+        background: #7f8c8d;
+    }
+    
+    .event { 
+        background: white; 
+        padding: 1.5rem; 
+        border-radius: 8px; 
+        margin-bottom: 1rem; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+        transition: all 0.3s ease;
+    } 
+    
+    .event:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .event h3 { 
+        margin: 0 0 0.5rem 0; 
+        color: #2c3e50;
+    }
+    
+    .meta { 
+        color: #7f8c8d; 
+        font-size: 0.9rem; 
+        margin-bottom: 0.8rem;
+    }
+    
+    .event-category {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        background: #9b59b6;
+        color: white;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-bottom: 0.75rem;
+    }
+    
+    .event-category.innovation {
+        background: #9b59b6;
+    }
+    
+    .event-category.conference {
+        background: #c59526;
+    }
+    
+    .btn { 
+        display: inline-block; 
+        padding: 0.6rem 1.2rem; 
+        background: #3498db; 
+        color: #fff; 
+        border-radius: 6px; 
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+    
+    .pagination {
+        margin-top: 2rem;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .pagination nav {
+        display: flex;
+        justify-content: center;
+    }
+    
+    .pagination nav > div {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .pagination nav svg {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .pagination nav a,
+    .pagination nav span {
+        min-width: 45px;
+        height: 45px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        color: #2c3e50;
+        font-weight: 500;
+        font-size: 1rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+    
+    .pagination nav a:hover {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .pagination nav span[aria-current="page"] {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+        box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+    }
+    
+    .pagination nav span[aria-disabled="true"] {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: #f5f5f5;
+    }
+    
+    .per-page {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: #7f8c8d;
+        margin-bottom: 1rem;
+    }
+    
+    .per-page select {
+        padding: 0.5rem 0.8rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        background: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+    
+    .per-page select:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+    
+    .search-results-info {
+        margin-bottom: 1rem;
+        color: #7f8c8d;
+    }
+
+    .empty-state {
+        background: white;
+        border-radius: 12px;
+        padding: 4rem 2rem;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        margin: 2rem 0;
+    }
+
+    .empty-state-icon {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .empty-state-icon::before {
+        content: '';
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        top: 30%;
+        left: 30%;
+    }
+
+    .empty-state-icon::after {
+        content: 'SEARCH';
+        color: white;
+        font-size: 1.2rem;
+        font-weight: bold;
+        letter-spacing: 2px;
+    }
+
+    .empty-state h2 {
+        color: #2c3e50;
+        font-size: 1.8rem;
+        margin: 0 0 1rem 0;
+        font-weight: 600;
+    }
+
+    .empty-state p {
+        color: #7f8c8d;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin: 0 0 2rem 0;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .empty-state-suggestions {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-top: 2rem;
+        text-align: left;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .empty-state-suggestions h3 {
+        color: #34495e;
+        font-size: 1rem;
+        margin: 0 0 1rem 0;
+        font-weight: 600;
+    }
+
+    .empty-state-suggestions ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .empty-state-suggestions li {
+        color: #5a6c7d;
+        padding: 0.5rem 0;
+        padding-left: 1.5rem;
+        position: relative;
+    }
+
+    .empty-state-suggestions li::before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        color: #3498db;
+        font-weight: bold;
+    }
+</style>
+@endsection
+
+@section('content')
+<div class="container">
+    <h1>Browse Events</h1>
+
+    <!-- Search and Filter Form -->
+    <div class="search-box">
+        <form method="GET" action="{{ route('events.index') }}" class="search-form">
+            <div class="form-group">
+                <label for="search">Search</label>
+                <input type="text" id="search" name="search" placeholder="Search events..." value="{{ request('search') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" name="category">
+                    <option value="">All Categories</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
+                            {{ $category->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="type">Type</label>
+                <select id="type" name="type">
+                    <option value="">All Types</option>
+                    <option value="free" {{ request('type') == 'free' ? 'selected' : '' }}>Free Events</option>
+                    <option value="paid" {{ request('type') == 'paid' ? 'selected' : '' }}>Paid Events</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="date_from">From Date</label>
+                <input type="date" id="date_from" name="date_from" value="{{ request('date_from') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="date_to">To Date</label>
+                <input type="date" id="date_to" name="date_to" value="{{ request('date_to') }}">
+            </div>
+
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn-search">Search</button>
+            </div>
+
+            @if(request()->hasAny(['search', 'category', 'type', 'date_from', 'date_to']))
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <a href="{{ route('events.index') }}" class="btn-clear">Clear</a>
+                </div>
+            @endif
+        </form>
+    </div>
+
+    @if(request()->hasAny(['search', 'category', 'type', 'date_from', 'date_to']))
+        <div class="search-results-info">
+            Showing {{ $events->total() }} result(s) for your search
+        </div>
+    @endif
+
+    @if($events->isEmpty())
+        <div class="empty-state">
+            <div class="empty-state-icon"></div>
+            @if(request()->hasAny(['search', 'category', 'type', 'date_from', 'date_to']))
+                {{-- User applied filters but no results --}}
+                <h2>No Events Found</h2>
+                <p>We couldn't find any events matching your criteria. Try adjusting your search filters or explore all available events.</p>
+                
+                <div class="empty-state-suggestions">
+                    <h3>Suggestions:</h3>
+                    <ul>
+                        <li>Try using different keywords</li>
+                        <li>Remove some filters to broaden your search</li>
+                        <li>Check the date range you've selected</li>
+                        <li>Browse all categories for more options</li>
+                    </ul>
+                </div>
+            @else
+                {{-- No events in database at all --}}
+                <h2>No Events Available Yet</h2>
+                <p>There are currently no events scheduled. Check back soon for exciting upcoming events and opportunities.</p>
+                
+                <div class="empty-state-suggestions">
+                    <h3>What's Next:</h3>
+                    <ul>
+                        <li>New events are added regularly</li>
+                        <li>Check back later for updates</li>
+                        <li>Follow us for event announcements</li>
+                        <li>Contact us to create your own event</li>
+                    </ul>
+                </div>
+            @endif
+        </div>
+    @else
+        @foreach($events as $event)
+            <div class="event">
+                @if($event->poster_url)
+                    <img src="{{ $event->poster_url }}" alt="{{ $event->title }}" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; background: #f5f5f5;" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div style="width: 100%; aspect-ratio: 16/9; background: #ecf0f1; border-radius: 8px; margin-bottom: 1rem; display: none; align-items: center; justify-content: center; color: #95a5a6; font-size: 3rem;">📅</div>
+                @else
+                    <div style="width: 100%; aspect-ratio: 16/9; background: #ecf0f1; border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: #95a5a6; font-size: 3rem;">📅</div>
+                @endif
+                
+                @if($event->category)
+                    @php
+                        $categoryClass = '';
+                        $categoryName = $event->category->name ?? 'Event';
+                        if (stripos($categoryName, 'innovation') !== false || stripos($categoryName, 'competition') !== false) {
+                            $categoryClass = 'innovation';
+                        } elseif (stripos($categoryName, 'conference') !== false) {
+                            $categoryClass = 'conference';
+                        }
+                    @endphp
+                    <span class="event-category {{ $categoryClass }}">{{ $categoryName }}</span>
+                @endif
+                
+                <h3>{{ $event->title }}</h3>
+                @php
+                    try {
+                        $startDate = $event->start_date ? \Carbon\Carbon::parse($event->start_date)->format('F d, Y') : 'TBA';
+                    } catch (\Exception $e) {
+                        $startDate = 'TBA';
+                    }
+                    $venue = $event->venue_name ?: 'Online';
+                    $summary = \Illuminate\Support\Str::limit($event->short_description ?? $event->description ?? '', 180);
+                    
+                    // Check for paper submission deadline
+                    $paperDeadline = null;
+                    if ($event->f2f_paper_deadline) {
+                        try {
+                            $paperDeadline = \Carbon\Carbon::parse($event->f2f_paper_deadline)->format('M d, Y');
+                        } catch (\Exception $e) {
+                            $paperDeadline = null;
+                        }
+                    } elseif ($event->online_paper_deadline) {
+                        try {
+                            $paperDeadline = \Carbon\Carbon::parse($event->online_paper_deadline)->format('M d, Y');
+                        } catch (\Exception $e) {
+                            $paperDeadline = null;
+                        }
+                    }
+                @endphp
+                <p class="meta">{{ $startDate }} • {{ $venue }}</p>
+                @if($paperDeadline)
+                    <p class="meta" style="color: #e74c3c; font-weight: 500;">
+                        📄 Paper Submission: {{ $paperDeadline }}
+                    </p>
+                @endif
+                <p style="margin-bottom: 1.5rem;">{{ $summary }}</p>
+                <a class="btn" href="{{ route('events.show', $event->id) }}">View details</a>
+            </div>
+        @endforeach
+
+        <div class="per-page">
+            <label for="per_page">Show:</label>
+            <select id="per_page" name="per_page" onchange="updatePerPage(this.value)">
+                <option value="5" {{ request('per_page', 10) == 5 ? 'selected' : '' }}>5</option>
+                <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
+                <option value="20" {{ request('per_page', 10) == 20 ? 'selected' : '' }}>20</option>
+                <option value="50" {{ request('per_page', 10) == 50 ? 'selected' : '' }}>50</option>
+            </select>
+            <span>per page</span>
+        </div>
+        
+        <div class="pagination">
+            {{ $events->appends(request()->except('page'))->links() }}
+        </div>
+
+        <script>
+        function updatePerPage(value) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('per_page', value);
+            url.searchParams.delete('page');
+            window.location.href = url.toString();
+        }
+        </script>
+    @endif
+</div>
+@endsection
