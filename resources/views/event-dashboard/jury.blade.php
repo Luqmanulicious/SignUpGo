@@ -141,49 +141,6 @@
                 }
             @endphp
 
-            @if ($evaluationDeadline)
-                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-                    <div
-                        style="background: {{ $isDeadlinePassed ? '#e74c3c' : '#2c3e50' }}; padding: 1rem; border-radius: 8px; flex: 1; color: white; display: flex; align-items: center; gap: 1rem;">
-                        <div style="font-size: 2rem;">{{ $isDeadlinePassed ? '⚠️' : '⏰' }}</div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.25rem;">Evaluation Deadline
-                                (Event Ends)</div>
-                            <div style="font-size: 1.1rem; font-weight: 700;">{{ $evaluationDeadlineText }}</div>
-                            @if ($isDeadlinePassed)
-                                <div style="font-size: 0.8rem; opacity: 0.9; margin-top: 0.25rem;">⚠️ Deadline has passed
-                                </div>
-                            @else
-                                <div style="font-size: 0.8rem; opacity: 0.9; margin-top: 0.25rem;">⏳ Time remaining:
-                                    {{ $evaluationDeadline->diffForHumans() }}</div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            {{-- @if ($evaluationDeadline)
-                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-                    <div style="background: {{ $isDeadlinePassed ? '#e74c3c' : '#2c3e50' }}; padding: 1rem; border-radius: 8px; flex: 1; color: white; display: flex; align-items: center; gap: 1rem;">
-                        <div style="font-size: 2rem;">{{ $isDeadlinePassed ? '⚠️' : '⏰' }}</div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.25rem;">Evaluation Deadline</div>
-                            <div style="font-size: 1.1rem; font-weight: 700;">{{ $evaluationDeadlineText }}</div>
-                            @if ($isDeadlinePassed)
-                                <div style="font-size: 0.8rem; opacity: 0.9; margin-top: 0.25rem;">⚠️ Deadline has passed</div>
-                            @else
-                                <div style="font-size: 0.8rem; opacity: 0.9; margin-top: 0.25rem;">⏳ Time remaining: {{ $evaluationDeadline->diffForHumans() }}</div>
-                            @endif
-                        </div>
-                    </div>
-                
-            @endif --}}
-
-            @php
-                $percentage = $totalAssigned > 0 ? round(($evaluationsCompleted / $totalAssigned) * 100) : 0;
-
-            @endphp
-
             @php
                 $percentage = $totalAssigned > 0 ? round(($evaluationsCompleted / $totalAssigned) * 100) : 0;
 
@@ -202,52 +159,70 @@
             @endphp
 
             @if ($evaluationDeadline)
-                <div
-                    style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 180px;">
-                    <div style="position: relative; width: 100px; height: 100px;">
-                        <svg style="transform: rotate(-90deg);" width="100" height="100">
-                            <circle cx="50" cy="50" r="45" stroke="#e0e0e0" stroke-width="8" fill="none" />
-                            <circle cx="50" cy="50" r="45" stroke="{{ $progressColor }}" stroke-width="8"
-                                fill="none" stroke-dasharray="{{ 2 * 3.14159 * 45 }}"
-                                stroke-dashoffset="{{ 2 * 3.14159 * 45 * (1 - $percentage / 100) }}" stroke-linecap="round"
-                                style="transition: stroke-dashoffset 0.5s ease;" />
-                        </svg>
-                        <div
-                            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                            <div style="font-size: 1.5rem; font-weight: 700; color: {{ $progressColor }};">
-                                {{ $percentage }}%</div>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    @if ($isDeadlinePassed)
+                        {{-- Deadline Passed: Show Progress Bar --}}
+                        <div style="background: white; padding: 1.5rem; border-radius: 8px; flex: 1; border: 2px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                <div style="font-size: 2rem;">⚠️</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.25rem;">Evaluation Deadline (Event Ended)</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #2c3e50;">{{ $evaluationDeadlineText }}</div>
+                                    <div style="font-size: 0.8rem; color: #e74c3c; margin-top: 0.25rem;">⚠️ Deadline has passed</div>
+                                </div>
+                            </div>
+                            
+                            {{-- Progress Bar: Green (Completed) + Red (Missed) --}}
+                            <div style="margin-top: 1rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span style="font-size: 0.85rem; color: #27ae60; font-weight: 600;">✓ Completed: {{ $evaluationsCompleted }}</span>
+                                    <span style="font-size: 0.85rem; color: #e74c3c; font-weight: 600;">✗ Missed: {{ $totalAssigned - $evaluationsCompleted }}</span>
+                                </div>
+                                <div style="width: 100%; height: 30px; background: #f8f9fa; border-radius: 15px; overflow: hidden; display: flex; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
+                                    @if($percentage > 0)
+                                        <div style="width: {{ $percentage }}%; background: linear-gradient(135deg, #27ae60 0%, #229954 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem; transition: width 0.5s ease;">
+                                            {{ $percentage }}%
+                                        </div>
+                                    @endif
+                                    @if($percentage < 100)
+                                        <div style="width: {{ 100 - $percentage }}%; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem; transition: width 0.5s ease;">
+                                            {{ 100 - $percentage }}%
+                                        </div>
+                                    @endif
+                                </div>
+                                <div style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; color: #6c757d;">
+                                    <strong>{{ $evaluationsCompleted }}/{{ $totalAssigned }}</strong> evaluations completed
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        {{-- Deadline Active: Show Countdown --}}
+                        <div style="background: #2c3e50; padding: 1rem; border-radius: 8px; flex: 1; color: white; display: flex; align-items: center; gap: 1rem;">
+                            <div style="font-size: 2rem;">⏰</div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.25rem;">Evaluation Deadline (Event Ends)</div>
+                                <div style="font-size: 1.1rem; font-weight: 700;">{{ $evaluationDeadlineText }}</div>
+                                <div style="font-size: 0.8rem; opacity: 0.9; margin-top: 0.25rem;">⏳ Time remaining: {{ $evaluationDeadline->diffForHumans() }}</div>
+                            </div>
+                        </div>
+                    @endif
+                    
+                    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 180px;">
+                        <div style="position: relative; width: 100px; height: 100px;">
+                            <svg style="transform: rotate(-90deg);" width="100" height="100">
+                                <circle cx="50" cy="50" r="45" stroke="#e0e0e0" stroke-width="8" fill="none" />
+                                <circle cx="50" cy="50" r="45" stroke="{{ $progressColor }}" stroke-width="8" fill="none" stroke-dasharray="{{ 2 * 3.14159 * 45 }}" stroke-dashoffset="{{ 2 * 3.14159 * 45 * (1 - $percentage / 100) }}" stroke-linecap="round" style="transition: stroke-dashoffset 0.5s ease;" />
+                            </svg>
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: {{ $progressColor }};">{{ $percentage }}%</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 0.75rem; text-align: center; color: #7f8c8d; font-size: 0.9rem; font-weight: 600;">
+                            Evaluation Progress
                         </div>
                     </div>
-                    <div
-                        style="margin-top: 0.75rem; text-align: center; color: #7f8c8d; font-size: 0.9rem; font-weight: 600;">
-                        Evaluation Progress
-                    </div>
                 </div>
-        </div>
-    @else
-        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-            <div
-                style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 180px;">
-                <div style="position: relative; width: 100px; height: 100px;">
-                    <svg style="transform: rotate(-90deg);" width="100" height="100">
-                        <circle cx="50" cy="50" r="45" stroke="#e0e0e0" stroke-width="8" fill="none" />
-                        <circle cx="50" cy="50" r="45" stroke="{{ $progressColor }}" stroke-width="8"
-                            fill="none" stroke-dasharray="{{ 2 * 3.14159 * 45 }}"
-                            stroke-dashoffset="{{ 2 * 3.14159 * 45 * (1 - $percentage / 100) }}" stroke-linecap="round"
-                            style="transition: stroke-dashoffset 0.5s ease;" />
-                    </svg>
-                    <div
-                        style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: {{ $progressColor }};">
-                            {{ $percentage }}%</div>
-                    </div>
-                </div>
-                <div style="margin-top: 0.75rem; text-align: center; color: #7f8c8d; font-size: 0.9rem; font-weight: 600;">
-                    Evaluation Progress
-                </div>
-            </div>
-        </div>
-        @endif
+            @endif
 
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.5rem;">
             <div

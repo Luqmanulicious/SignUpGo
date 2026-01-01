@@ -31,7 +31,7 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="{{ route('certificates.index') }}" class="nav-link {{ request()->routeIs('certificates.*') ? 'active' : '' }}">
                 🎓 <span>My Certificates</span>
             </a>
         </li>

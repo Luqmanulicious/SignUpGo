@@ -81,6 +81,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/mailbox', [App\Http\Controllers\MailboxController::class, 'index'])->name('mailbox.index');
     Route::post('/mailbox/{notification}/mark-read', [App\Http\Controllers\MailboxController::class, 'markAsRead'])->name('mailbox.mark-read');
     Route::delete('/mailbox/{notification}', [App\Http\Controllers\MailboxController::class, 'destroy'])->name('mailbox.destroy');
+    
+    // Certificate Routes
+    Route::get('/certificates', [App\Http\Controllers\CertificateController::class, 'index'])->name('certificates.index');
+    Route::get('/certificates/{id}/download', [App\Http\Controllers\CertificateController::class, 'download'])->name('certificates.download');
 });
 
 // ============================================================================

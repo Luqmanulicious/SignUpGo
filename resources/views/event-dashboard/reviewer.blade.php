@@ -139,40 +139,74 @@
             @endphp
 
             @if($reviewDeadline)
+                @php
+                    $totalAssigned = $assignedParticipants->count();
+                    $completedReviews = $assignedParticipants->where('review_status', 'completed')->count();
+                    $percentage = $totalAssigned > 0 ? round(($completedReviews / $totalAssigned) * 100) : 0;
+                    
+                    // HCI-friendly color scheme
+                    if ($percentage == 0) {
+                        $progressColor = '#95a5a6'; // Gray for not started
+                    } elseif ($percentage <= 25) {
+                        $progressColor = '#e74c3c'; // Red
+                    } elseif ($percentage <= 60) {
+                        $progressColor = '#f39c12'; // Orange
+                    } elseif ($percentage <= 80) {
+                        $progressColor = '#f1c40f'; // Yellow
+                    } else {
+                        $progressColor = '#27ae60'; // Green
+                    }
+                @endphp
+                
                 <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-                    <div style="background: {{ $isDeadlinePassed ? '#e74c3c' : '#2c3e50' }}; padding: 1rem; border-radius: 8px; flex: 1; color: white; display: flex; align-items: center; gap: 1rem;">
-                        <div style="font-size: 2rem;">{{ $isDeadlinePassed ? '⚠️' : '⏰' }}</div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem;">
-                                {{ $isDeadlinePassed ? 'Review Deadline Has Passed' : 'Review Deadline' }}
+                    @if ($isDeadlinePassed)
+                        {{-- Deadline Passed: Show Progress Bar --}}
+                        <div style="background: white; padding: 1.5rem; border-radius: 8px; flex: 1; border: 2px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                <div style="font-size: 2rem;">⚠️</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.25rem;">Review Deadline (Passed)</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #2c3e50;">{{ $reviewDeadlineText }}</div>
+                                    <div style="font-size: 0.8rem; color: #e74c3c; margin-top: 0.25rem;">⚠️ Deadline has passed</div>
+                                </div>
                             </div>
-                            <div style="font-size: 1.1rem; font-weight: bold;">{{ $reviewDeadlineText }}</div>
-                            @if(!$isDeadlinePassed)
+                            
+                            {{-- Progress Bar: Green (Completed) + Red (Missed) --}}
+                            <div style="margin-top: 1rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span style="font-size: 0.85rem; color: #27ae60; font-weight: 600;">✓ Completed: {{ $completedReviews }}</span>
+                                    <span style="font-size: 0.85rem; color: #e74c3c; font-weight: 600;">✗ Missed: {{ $totalAssigned - $completedReviews }}</span>
+                                </div>
+                                <div style="width: 100%; height: 30px; background: #f8f9fa; border-radius: 15px; overflow: hidden; display: flex; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
+                                    @if($percentage > 0)
+                                        <div style="width: {{ $percentage }}%; background: linear-gradient(135deg, #27ae60 0%, #229954 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem; transition: width 0.5s ease;">
+                                            {{ $percentage }}%
+                                        </div>
+                                    @endif
+                                    @if($percentage < 100)
+                                        <div style="width: {{ 100 - $percentage }}%; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem; transition: width 0.5s ease;">
+                                            {{ 100 - $percentage }}%
+                                        </div>
+                                    @endif
+                                </div>
+                                <div style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; color: #6c757d;">
+                                    <strong>{{ $completedReviews }}/{{ $totalAssigned }}</strong> reviews completed
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        {{-- Deadline Active: Show Countdown --}}
+                        <div style="background: #2c3e50; padding: 1rem; border-radius: 8px; flex: 1; color: white; display: flex; align-items: center; gap: 1rem;">
+                            <div style="font-size: 2rem;">⏰</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem;">Review Deadline</div>
+                                <div style="font-size: 1.1rem; font-weight: bold;">{{ $reviewDeadlineText }}</div>
                                 <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 0.25rem;">
                                     Please submit all evaluations before this deadline
                                 </div>
-                            @endif
+                            </div>
                         </div>
-                    </div>
-                    
-                    @php
-                        $totalAssigned = $assignedParticipants->count();
-                        $completedReviews = $assignedParticipants->where('review_status', 'completed')->count();
-                        $percentage = $totalAssigned > 0 ? round(($completedReviews / $totalAssigned) * 100) : 0;
-                        
-                        // HCI-friendly color scheme
-                        if ($percentage == 0) {
-                            $progressColor = '#95a5a6'; // Gray for not started
-                        } elseif ($percentage <= 25) {
-                            $progressColor = '#e74c3c'; // Red
-                        } elseif ($percentage <= 60) {
-                            $progressColor = '#f39c12'; // Orange
-                        } elseif ($percentage <= 80) {
-                            $progressColor = '#f1c40f'; // Yellow
-                        } else {
-                            $progressColor = '#27ae60'; // Green
-                        }
-                    @endphp
+                    @endif
                     
                     <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 180px;">
                         <div style="position: relative; width: 100px; height: 100px;">
