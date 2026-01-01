@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Evaluate Submission - {{ $event->name }}</title>
+    <title>{{ !is_null($registration->evaluations_submitted_at) ? 'View' : 'Evaluate' }} Submission - {{ $event->name }}</title>
     <style>
         * {
             margin: 0;
@@ -30,7 +30,7 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, {{ !is_null($registration->evaluations_submitted_at) ? '#6c757d 0%, #495057 100%' : '#667eea 0%, #764ba2 100%' }});
             color: white;
             padding: 2rem;
             text-align: center;
@@ -445,6 +445,120 @@
             border-bottom: 6px solid #1f2937;
         }
 
+        /* Rubric Table Styles */
+        .view-rubric-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .view-rubric-btn:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .view-rubric-btn .arrow {
+            transition: transform 0.3s;
+        }
+
+        .view-rubric-btn.active .arrow {
+            transform: rotate(180deg);
+        }
+
+        .rubric-table-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out;
+            margin-top: 1rem;
+        }
+
+        .rubric-table-container.active {
+            max-height: 1000px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        .rubric-table {
+            width: 100%;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e5e7eb;
+            margin-top: 1rem;
+        }
+
+        .rubric-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .rubric-table th {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .rubric-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.9rem;
+            color: #4b5563;
+        }
+
+        .rubric-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .rubric-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .rubric-table .score-column {
+            font-weight: 700;
+            color: #2c3e50;
+            text-align: center;
+            width: 80px;
+            background: #f8f9fa;
+        }
+
+        .rubric-table .score-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            font-size: 1.1rem;
+            font-weight: 700;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .rubric-table-header {
+            background: #f8f9fa;
+            padding: 0.75rem 1rem;
+            border-bottom: 2px solid #e5e7eb;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
         @keyframes slideIn {
             from {
                 transform: translateX(400px);
@@ -484,12 +598,23 @@
     <div class="container">
         
         <div class="header">
-            <h1>📊 {{ !empty($existingScores) ? 'Edit' : 'Submit' }} Evaluation</h1>
+            <h1>📊 {{ !is_null($registration->evaluations_submitted_at) ? '🔒 View Evaluation (Read-Only)' : (!empty($existingScores) ? 'Edit' : 'Save') . ' Evaluation' }}</h1>
             <p>{{ $event->name }}</p>
+            @if(!is_null($registration->evaluations_submitted_at))
+                <p style="margin-top: 0.75rem; font-size: 0.9rem; background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 6px; display: inline-block;">
+                    ✅ Finalized on {{ \Carbon\Carbon::parse($registration->evaluations_submitted_at)->format('M d, Y h:i A') }}
+                </p>
+            @endif
         </div>
         <a href="{{ route('events.jury-dashboard', $registration->id) }}" class="back-btn">
-            ← Back to Dashboard
+            ← Back to Jury Dashboard
         </a>
+        
+        @if(!is_null($registration->evaluations_submitted_at))
+            <div style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; padding: 1rem 2rem; margin: 1rem 2rem; border-radius: 8px; text-align: center; font-weight: 600;">
+                🔒 This evaluation has been finalized and submitted. All fields are read-only.
+            </div>
+        @endif
         <div class="content-wrapper">
             <!-- Left Side: Product Details -->
             <div class="product-section">
@@ -585,7 +710,8 @@
                                                 <button type="button" class="score-btn {{ isset($existingScores[$item->id]) && $existingScores[$item->id] == $i ? 'selected' : '' }}"
                                                     data-item-id="{{ $item->id }}"
                                                     data-score="{{ $i }}"
-                                                    onclick="selectScore({{ $item->id }}, {{ $i }})">
+                                                    onclick="selectScore({{ $item->id }}, {{ $i }})"
+                                                    {{ !is_null($registration->evaluations_submitted_at) ? 'disabled style="cursor: not-allowed; opacity: 0.6;"' : '' }}>
                                                     {{ $i }}
                                                 </button>
                                             @endfor
@@ -607,22 +733,79 @@
                                             <div data-level="{{ $level->level }}">{{ $level->description }}</div>
                                         @endforeach
                                     </div>
+
+                                    <!-- View Rubric Table Button -->
+                                    <button type="button" class="view-rubric-btn" onclick="toggleRubricTable({{ $item->id }})">
+                                        📋 View Rubric Table
+                                        <span class="arrow">▼</span>
+                                    </button>
+
+                                    <!-- Rubric Table (Initially Hidden) -->
+                                    <div class="rubric-table-container" id="rubric_table_{{ $item->id }}">
+                                        <div class="rubric-table">
+                                            <div class="rubric-table-header">
+                                                📊 Score Levels for "{{ $item->name }}"
+                                            </div>
+                                            <table>
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width: 100px; text-align: center;">Score</th>
+                                                        <th>Description</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @php
+                                                        $scoreLevelsTable = DB::table('rubric_score_levels')
+                                                            ->where('rubric_item_id', $item->id)
+                                                            ->orderBy('level', 'desc')
+                                                            ->get();
+                                                    @endphp
+                                                    @if($scoreLevelsTable->count() > 0)
+                                                        @foreach($scoreLevelsTable as $level)
+                                                            <tr>
+                                                                <td class="score-column">
+                                                                    <span class="score-badge">{{ $level->level }}</span>
+                                                                </td>
+                                                                <td>{{ $level->description }}</td>
+                                                            </tr>
+                                                        @endforeach
+                                                    @else
+                                                        <tr>
+                                                            <td colspan="2" style="text-align: center; color: #9ca3af; padding: 2rem;">
+                                                                No score level descriptions available
+                                                            </td>
+                                                        </tr>
+                                                    @endif
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
                             @endforeach
 
                             <div class="category-comment-section">
                                 <label class="category-comment-label">Overall Comments for {{ $category->name }} (Optional)</label>
                                 <textarea name="category_comments[{{ $category->id }}]" class="comment-field"
-                                    placeholder="Add overall comments for {{ $category->name }}" id="category_comment_{{ $category->id }}">{{ $categoryComments[$category->id] ?? '' }}</textarea>
+                                    placeholder="Add overall comments for {{ $category->name }}" id="category_comment_{{ $category->id }}"
+                                    {{ !is_null($registration->evaluations_submitted_at) ? 'readonly style="background: #f5f5f5; cursor: not-allowed;"' : '' }}>{{ $categoryComments[$category->id] ?? '' }}</textarea>
                             </div>
                         </div>
                     @endforeach
 
-                    <div class="submit-section">
-                        <button type="submit" class="submit-btn" id="submitBtn">
-                            ✓ Submit Evaluation
-                        </button>
-                    </div>
+                    @if(is_null($registration->evaluations_submitted_at))
+                        <div class="submit-section">
+                            <button type="submit" class="submit-btn" id="submitBtn">
+                                ✓ Save Evaluation
+                            </button>
+                            <p style="color: #6c757d;">Please submit all evaluations via the Jury Dashboard only after you have finalized your scores.</p>
+                        </div>
+                    @else
+                        <div class="submit-section">
+                            <div style="padding: 1.5rem; background: #f8f9fa; border-radius: 8px; text-align: center; color: #6c757d; font-weight: 600;">
+                                🔒 This evaluation has been finalized and cannot be modified.
+                            </div>
+                        </div>
+                    @endif
                 </form>
             </div>
         </div>
@@ -670,6 +853,24 @@
         @endif
 
         let currentTooltip = null;
+
+        // Toggle rubric table visibility
+        function toggleRubricTable(itemId) {
+            const table = document.getElementById(`rubric_table_${itemId}`);
+            const button = event.target.closest('.view-rubric-btn');
+            
+            if (table.classList.contains('active')) {
+                table.classList.remove('active');
+                button.classList.remove('active');
+                button.querySelector('.arrow').textContent = '▼';
+                button.innerHTML = button.innerHTML.replace('Hide Rubric Table', 'View Rubric Table');
+            } else {
+                table.classList.add('active');
+                button.classList.add('active');
+                button.querySelector('.arrow').textContent = '▲';
+                button.innerHTML = button.innerHTML.replace('View Rubric Table', 'Hide Rubric Table');
+            }
+        }
 
         function selectScore(itemId, score) {
             // Remove selected class from all buttons for this item
@@ -740,27 +941,42 @@
         });
 
         // Form validation before submit
-        document.getElementById('evaluationForm').addEventListener('submit', function(e) {
-            const allItems = document.querySelectorAll('input[name^="scores"]');
-            let allScored = true;
+        @if(is_null($registration->evaluations_submitted_at))
+            document.getElementById('evaluationForm').addEventListener('submit', function(e) {
+                const allItems = document.querySelectorAll('input[name^="scores"]');
+                let allScored = true;
 
-            allItems.forEach(input => {
-                if (!input.value && input.value !== '0') {
-                    allScored = false;
+                allItems.forEach(input => {
+                    if (!input.value && input.value !== '0') {
+                        allScored = false;
+                    }
+                });
+
+                if (!allScored) {
+                    e.preventDefault();
+                    showToast('Please provide scores for all rubric items before submitting.', 'error');
+                    return false;
                 }
-            });
 
-            if (!allScored) {
+                // Disable submit button to prevent double submission
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitting...';
+            });
+        @else
+            // Prevent form submission if evaluations are finalized
+            document.getElementById('evaluationForm').addEventListener('submit', function(e) {
                 e.preventDefault();
-                showToast('Please provide scores for all rubric items before submitting.', 'error');
+                showToast('This evaluation has been finalized and cannot be modified.', 'error');
+                return false;
+            });
+            
+            // Disable score selection for read-only mode
+            function selectScore(itemId, score) {
+                // Do nothing in read-only mode
                 return false;
             }
-
-            // Disable submit button to prevent double submission
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
-        });
+        @endif
     </script>
 </body>
 

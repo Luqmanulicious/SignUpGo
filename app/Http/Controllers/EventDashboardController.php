@@ -458,6 +458,11 @@ class EventDashboardController extends Controller
         
         // Verify authorization
         $juryRegistration = EventRegistration::find($juryMapping->jury_registration_id);
+        
+        // Check if evaluations have been submitted (read-only mode)
+        if ($juryRegistration && !is_null($juryRegistration->evaluations_submitted_at)) {
+            return redirect()->back()->with('error', 'Evaluations have been finalized and cannot be modified.');
+        }
         if (!$juryRegistration || $juryRegistration->user_id !== Auth::id()) {
             return redirect()->back()->with('error', 'Unauthorized access.');
         }
@@ -570,7 +575,7 @@ class EventDashboardController extends Controller
             DB::commit();
             
             return redirect()->route('events.jury-dashboard', $juryRegistration->id)
-                ->with('success', 'Evaluation submitted successfully!');
+                ->with('success', 'Evaluation saved successfully! You can edit this later until you submit all evaluations.');
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -601,4 +606,82 @@ class EventDashboardController extends Controller
         
         return view('event-dashboard.jury', compact('event', 'registration'));
     }
-}
+
+    /**
+     * Submit all jury evaluations (final confirmation)
+     */
+    public function submitAllJuryEvaluations(Request $request, EventRegistration $registration)
+    {
+        try {
+            // Verify the registration belongs to the authenticated user
+            if ($registration->user_id !== Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access.'
+                ], 403);
+            }
+            
+            // Verify the registration is for a jury role
+            if ($registration->role !== 'jury') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This registration is not for a jury role.'
+                ], 403);
+            }
+
+            // Get all assigned mappings for this jury
+            $assignedMappings = DB::table('jury_mappings')
+                ->where('jury_registration_id', $registration->id)
+                ->where('event_id', $registration->event_id)
+                ->get();
+            
+            $totalAssigned = $assignedMappings->count();
+            
+            // Count completed evaluations
+            $evaluationsCompleted = DB::table('jury_mappings')
+                ->where('jury_registration_id', $registration->id)
+                ->where('event_id', $registration->event_id)
+                ->where('status', 'evaluated')
+                ->count();
+            
+            // Check if all evaluations are complete
+            if ($evaluationsCompleted < $totalAssigned) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Please complete all evaluations before submitting. {$evaluationsCompleted}/{$totalAssigned} completed."
+                ], 400);
+            }
+
+            // Update registration to mark evaluations as submitted
+            DB::table('event_registrations')
+                ->where('id', $registration->id)
+                ->update([
+                    'evaluations_submitted_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+            $event = Event::find($registration->event_id);
+            DB::table('user_notifications')->insert([
+                'user_id' => $event->organizer_id ?? 1, // Event organizer
+                'title' => 'Jury Evaluations Submitted',
+                'message' => "Jury member {$registration->user->name} has submitted all evaluations for {$event->title}.",
+                'type' => 'eo_notification',
+                'priority' => 'normal',
+                'event_id' => $event->id,
+                'is_read' => false,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'All evaluations have been successfully submitted! The event organizer has been notified.'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to submit evaluations: ' . $e->getMessage()
+            ], 500);
+        }
+    }}

@@ -350,7 +350,7 @@
 
         /* Registration Overview Styles */
         .registration-overview {
-            background: rgb(18, 19, 80);
+            background: linear-gradient(135deg, #059332 0%, #030161 100%);
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
@@ -359,7 +359,7 @@
 
         .registration-overview h2 {
             margin: 0 0 1.5rem 0;
-            color: #dbedff;
+            color: #ffffff;
             font-size: 1.5rem;
         }
 
@@ -515,7 +515,7 @@
             background: #e9ecef;
             border-radius: 4px;
             font-size: 0.8rem;
-            color: #495057;
+            color: #08942d;
         }
 
         /* Modal Overlay: Darkened background */
@@ -540,7 +540,7 @@
 
         /* Modal Box: The "Small Page" */
         .modal-content {
-            background: #6a7393;
+            background: #9b9b9b;
             border-radius: 12px;
             width: 90%;
             max-width: 500px;

@@ -69,12 +69,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/jury/evaluate/{juryMapping}', [App\Http\Controllers\EventDashboardController::class, 'showJuryEvaluationForm'])->name('jury.evaluate');
     Route::post('/jury/evaluate/{juryMapping}', [App\Http\Controllers\EventDashboardController::class, 'submitJuryEvaluation'])->name('jury.evaluate.submit');
     Route::get('/events/jury-dashboard/{registration}', [App\Http\Controllers\EventDashboardController::class, 'juryDashboard'])->name('events.jury-dashboard');
+    Route::post('/jury/submit-all/{registration}', [App\Http\Controllers\EventDashboardController::class, 'submitAllJuryEvaluations'])->name('jury.submit-all');
     
     // Feedback Routes
     Route::get('/feedback', [App\Http\Controllers\FeedbackController::class, 'index'])->name('feedback.index');
     Route::get('/feedback/{registration}/create', [App\Http\Controllers\FeedbackController::class, 'create'])->name('feedback.create');
     Route::post('/feedback/{registration}', [App\Http\Controllers\FeedbackController::class, 'store'])->name('feedback.store');
     Route::get('/feedback/{registration}', [App\Http\Controllers\FeedbackController::class, 'show'])->name('feedback.show');
+    
+    // Mailbox Routes
+    Route::get('/mailbox', [App\Http\Controllers\MailboxController::class, 'index'])->name('mailbox.index');
+    Route::post('/mailbox/{notification}/mark-read', [App\Http\Controllers\MailboxController::class, 'markAsRead'])->name('mailbox.mark-read');
+    Route::delete('/mailbox/{notification}', [App\Http\Controllers\MailboxController::class, 'destroy'])->name('mailbox.destroy');
 });
 
 // ============================================================================

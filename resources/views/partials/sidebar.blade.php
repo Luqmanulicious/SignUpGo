@@ -36,7 +36,7 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="{{ route('mailbox.index') }}" class="nav-link {{ request()->routeIs('mailbox.*') ? 'active' : '' }}">
                 📧 <span>Mail box</span>
             </a>
         </li>
