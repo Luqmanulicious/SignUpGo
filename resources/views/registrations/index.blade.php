@@ -1094,11 +1094,24 @@
 
                         @php
                             $eventEnded = $event->end_date && now()->gt($event->end_date);
+                            
+                            // Check if certificate has been generated for this user and event
+                            $hasCertificate = \DB::table('generated_certificates')
+                                ->where('user_id', $registration->user_id)
+                                ->where('event_id', $registration->event_id)
+                                ->exists();
                         @endphp
                         @if ($registration->checked_in_at && $eventEnded)
                             <a href="{{ route('feedback.create', $registration) }}" class="btn btn-primary"
                                 style="background: #92318d;">
                                 💬 Event Feedback
+                            </a>
+                        @endif
+
+                        @if ($hasCertificate)
+                            <a href="{{ route('certificates.index') }}" class="btn btn-primary"
+                                style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); border: none;">
+                                🎓 View Certificate
                             </a>
                         @endif
 
@@ -1174,10 +1187,12 @@
         function showCancelModal(registrationId) {
             currentFormId = 'cancel-form-' + registrationId;
             document.getElementById('cancelModal').classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
         }
 
         function closeCancelModal() {
             document.getElementById('cancelModal').classList.remove('active');
+            document.body.style.overflow = 'auto'; // Resume scrolling
             currentFormId = null;
         }
 
@@ -1194,22 +1209,7 @@
             }
         });
 
-        // Toggle event details in overview
-        function toggleDetails(category) {
-            const eventsDiv = document.getElementById(category + '-events');
-            const button = event.target;
-
-            if (eventsDiv.classList.contains('active')) {
-                eventsDiv.classList.remove('active');
-                button.classList.remove('active');
-                button.textContent = 'View Details';
-            } else {
-                eventsDiv.classList.add('active');
-                button.classList.add('active');
-                button.textContent = 'Hide Details';
-            }
-        }
-
+        // Toggle event details in overview - opens modal with event list
         function toggleDetails(type) {
             const modal = document.getElementById('eventModal');
             const modalTitle = document.getElementById('modalTitle');
@@ -1237,6 +1237,19 @@
                 closeModal();
             }
         }
+
+        // Prevent accidental form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ensure all cancel forms require confirmation
+            document.querySelectorAll('[id^="cancel-form-"]').forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    // Only allow submission if it's coming from the confirmation
+                    if (!currentFormId) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        });
     </script>
 
 @endsection

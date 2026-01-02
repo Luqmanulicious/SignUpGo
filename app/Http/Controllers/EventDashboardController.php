@@ -259,6 +259,65 @@ class EventDashboardController extends Controller
     }
 
     /**
+     * Submit payment receipt for event registration.
+     */
+    public function submitPayment(Request $request, Event $event, EventRegistration $registration)
+    {
+        // Verify the registration belongs to the authenticated user
+        if ($registration->user_id !== Auth::id() || $registration->event_id !== $event->id) {
+            return back()->with('error', 'Unauthorized action.');
+        }
+
+        // Validate payment receipt
+        $request->validate([
+            'payment_receipt' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB max
+        ]);
+
+        try {
+            // Initialize Cloudinary service
+            $cloudinary = new CloudinaryService();
+
+            // Delete old payment receipt if exists and is being replaced
+            if ($registration->payment_receipt_path) {
+                try {
+                    $cloudinary->deleteByUrl($registration->payment_receipt_path);
+                } catch (\Exception $e) {
+                    // Log but don't fail if deletion fails
+                    \Log::warning('Failed to delete old payment receipt', [
+                        'registration_id' => $registration->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Upload payment receipt to Cloudinary
+            $result = $cloudinary->uploadPaymentReceipt(
+                $request->file('payment_receipt'),
+                $registration->id,
+                $event->id
+            );
+
+            // Update registration with payment details
+            $registration->payment_receipt_path = $result['secure_url'];
+            $registration->payment_status = 'pending';
+            $registration->payment_submitted_at = now();
+            $registration->payment_notes = null; // Clear any previous rejection notes
+            $registration->save();
+
+            return back()->with('success', 'Payment receipt submitted successfully! Your payment is being reviewed by the event organizer.');
+            
+        } catch (\Exception $e) {
+            \Log::error('Payment receipt upload failed', [
+                'registration_id' => $registration->id,
+                'event_id' => $event->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()->with('error', 'Failed to upload payment receipt. Please try again.');
+        }
+    }
+
+    /**
      * Submit review for assigned participant.
      */
     public function submitReview(Request $request, Event $event, EventRegistration $registration)

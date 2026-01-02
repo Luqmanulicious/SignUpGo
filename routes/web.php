@@ -62,6 +62,9 @@ Route::middleware('auth')->group(function () {
     // Paper Management Routes
     Route::post('/events/{event}/paper/{registration}', [App\Http\Controllers\EventDashboardController::class, 'updatePaper'])->name('event.paper.update');
     
+    // Payment Routes
+    Route::post('/events/{event}/payment/{registration}', [App\Http\Controllers\EventDashboardController::class, 'submitPayment'])->name('event.payment.submit');
+    
     // Reviewer Routes
     Route::post('/events/{event}/submit-review/{registration}', [App\Http\Controllers\EventDashboardController::class, 'submitReview'])->name('event.submit-review');
     

@@ -142,6 +142,22 @@ class CloudinaryService
     }
 
     /**
+     * Upload a payment receipt
+     * 
+     * @param UploadedFile $file
+     * @param int $registrationId
+     * @param int $eventId
+     * @return array
+     */
+    public function uploadPaymentReceipt(UploadedFile $file, int $registrationId, int $eventId): array
+    {
+        return $this->upload($file, 'payment-receipts', [
+            'public_id' => 'payment_receipt_' . $eventId . '_' . $registrationId . '_' . time(),
+            'tags' => ['payment_receipt', 'event_' . $eventId, 'registration_' . $registrationId],
+        ]);
+    }
+
+    /**
      * Upload a QR code image
      * 
      * @param string $imageData Base64 or file path
