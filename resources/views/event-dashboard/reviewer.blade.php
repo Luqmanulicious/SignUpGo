@@ -251,6 +251,31 @@
                     </div>
                 </div>
             </div>
+
+            @php
+                $eventEnded = \Carbon\Carbon::now()->isAfter($event->end_date);
+                $allEvaluationsCompleted = $assignedParticipants->count() > 0 && 
+                    $assignedParticipants->where('review_status', 'completed')->count() === $assignedParticipants->count();
+            @endphp
+
+            {{-- Feedback Section for Reviewers (After All Evaluations Completed) --}}
+            @if($eventEnded && $allEvaluationsCompleted)
+                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem; color: white;">
+                        <div style="font-size: 3rem;">💬</div>
+                        <div style="flex: 1;">
+                            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 700;">Share Your Feedback</h3>
+                            <p style="margin: 0 0 1rem 0; opacity: 0.95; font-size: 0.95rem;">
+                                You've completed all your evaluations! Help us improve by sharing your experience.
+                            </p>
+                            <a href="{{ route('feedback.create', $registration) }}" 
+                                style="display: inline-block; background: white; color: #059669; padding: 0.75rem 1.5rem; border-radius: 6px; text-decoration: none; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.2s ease;">
+                                💬 Submit Event Feedback
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">

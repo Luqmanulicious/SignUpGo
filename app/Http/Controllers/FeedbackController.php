@@ -14,16 +14,53 @@ class FeedbackController extends Controller
      */
     public function index()
     {
-        // Get all registrations for the authenticated user where they've checked in
+        // Get all registrations for the authenticated user
         $registrations = EventRegistration::with(['event', 'feedback'])
             ->where('user_id', Auth::id())
-            ->whereNotNull('checked_in_at')
-            ->orderBy('checked_in_at', 'desc')
+            ->whereIn('status', ['approved', 'confirmed'])
+            ->orderBy('created_at', 'desc')
             ->get();
 
-        // Filter to only show events that have ended
+        // Filter based on role-specific conditions
         $registrations = $registrations->filter(function ($registration) {
-            return now()->isAfter($registration->event->end_date);
+            $event = $registration->event;
+            $eventEnded = now()->isAfter($event->end_date);
+            
+            // Event must have ended for all roles
+            if (!$eventEnded) {
+                return false;
+            }
+
+            $role = $registration->role;
+            $isConference = !empty($event->conference_categories);
+
+            // Conference Participants & Jury: Must have checked in
+            if (($role === 'participant' && $isConference) || $role === 'jury') {
+                return $registration->checked_in_at !== null;
+            }
+
+            // Innovation Participants: Must have approved payment
+            if ($role === 'participant' && !$isConference) {
+                return $registration->payment_status === 'approved';
+            }
+
+            // Reviewers: Must have completed all evaluations
+            if ($role === 'reviewer') {
+                $assignedCount = \DB::table('jury_mappings')
+                    ->where('event_id', $event->id)
+                    ->where('reviewer_registration_id', $registration->id)
+                    ->count();
+                
+                $completedCount = \DB::table('jury_mappings')
+                    ->where('event_id', $event->id)
+                    ->where('reviewer_registration_id', $registration->id)
+                    ->where('status', 'completed')
+                    ->count();
+                
+                return $assignedCount > 0 && $assignedCount === $completedCount;
+            }
+
+            return false;
         });
 
         return view('feedback.index', compact('registrations'));
@@ -45,22 +82,54 @@ class FeedbackController extends Controller
                 ->with('info', 'You have already submitted feedback for this event.');
         }
 
-        // Verify user has checked in
-        if (!$registration->checked_in_at) {
-            return redirect()->route('feedback.index')
-                ->with('error', 'You must check in to the event before submitting feedback.');
-        }
-
         // Load the event relationship
         $registration->load('event');
+        $event = $registration->event;
         
         // Check if event has ended
-        $event = $registration->event;
         $eventEnded = now()->isAfter($event->end_date);
-        
         if (!$eventEnded) {
             return redirect()->route('feedback.index')
                 ->with('error', 'You can only submit feedback after the event has ended.');
+        }
+
+        // Role-based access validation
+        $role = $registration->role;
+        $isConference = !empty($event->conference_categories);
+
+        // Conference Participants & Jury: Must have checked in
+        if (($role === 'participant' && $isConference) || $role === 'jury') {
+            if (!$registration->checked_in_at) {
+                return redirect()->route('feedback.index')
+                    ->with('error', 'You must check in to the event before submitting feedback.');
+            }
+        }
+
+        // Innovation Participants: Must have approved payment
+        if ($role === 'participant' && !$isConference) {
+            if ($registration->payment_status !== 'approved') {
+                return redirect()->route('feedback.index')
+                    ->with('error', 'Your payment must be approved before submitting feedback.');
+            }
+        }
+
+        // Reviewers: Must have completed all evaluations
+        if ($role === 'reviewer') {
+            $assignedCount = \DB::table('jury_mappings')
+                ->where('event_id', $event->id)
+                ->where('reviewer_registration_id', $registration->id)
+                ->count();
+            
+            $completedCount = \DB::table('jury_mappings')
+                ->where('event_id', $event->id)
+                ->where('reviewer_registration_id', $registration->id)
+                ->where('status', 'completed')
+                ->count();
+            
+            if ($assignedCount === 0 || $assignedCount !== $completedCount) {
+                return redirect()->route('feedback.index')
+                    ->with('error', 'You must complete all evaluations before submitting feedback.');
+            }
         }
 
         return view('feedback.create', compact('registration'));
@@ -82,10 +151,54 @@ class FeedbackController extends Controller
                 ->with('error', 'You have already submitted feedback for this event.');
         }
 
-        // Verify user has checked in
-        if (!$registration->checked_in_at) {
+        // Load the event relationship
+        $registration->load('event');
+        $event = $registration->event;
+        
+        // Check if event has ended
+        $eventEnded = now()->isAfter($event->end_date);
+        if (!$eventEnded) {
             return redirect()->route('feedback.index')
-                ->with('error', 'You must check in to the event before submitting feedback.');
+                ->with('error', 'You can only submit feedback after the event has ended.');
+        }
+
+        // Role-based access validation (same as create method)
+        $role = $registration->role;
+        $isConference = !empty($event->conference_categories);
+
+        // Conference Participants & Jury: Must have checked in
+        if (($role === 'participant' && $isConference) || $role === 'jury') {
+            if (!$registration->checked_in_at) {
+                return redirect()->route('feedback.index')
+                    ->with('error', 'You must check in to the event before submitting feedback.');
+            }
+        }
+
+        // Innovation Participants: Must have approved payment
+        if ($role === 'participant' && !$isConference) {
+            if ($registration->payment_status !== 'approved') {
+                return redirect()->route('feedback.index')
+                    ->with('error', 'Your payment must be approved before submitting feedback.');
+            }
+        }
+
+        // Reviewers: Must have completed all evaluations
+        if ($role === 'reviewer') {
+            $assignedCount = \DB::table('jury_mappings')
+                ->where('event_id', $event->id)
+                ->where('reviewer_registration_id', $registration->id)
+                ->count();
+            
+            $completedCount = \DB::table('jury_mappings')
+                ->where('event_id', $event->id)
+                ->where('reviewer_registration_id', $registration->id)
+                ->where('status', 'completed')
+                ->count();
+            
+            if ($assignedCount === 0 || $assignedCount !== $completedCount) {
+                return redirect()->route('feedback.index')
+                    ->with('error', 'You must complete all evaluations before submitting feedback.');
+            }
         }
 
         // Validate feedback data
@@ -97,7 +210,7 @@ class FeedbackController extends Controller
             'venue_rating' => 'nullable|integer|min:1|max:5',
             'comments' => 'nullable|string|max:2000',
             'suggestions' => 'nullable|string|max:2000',
-            'system_feedback' => 'nullable|string|max:2000',
+            'system_feedback' => 'required|string|max:2000',
             'would_recommend' => 'required|boolean',
         ]);
 

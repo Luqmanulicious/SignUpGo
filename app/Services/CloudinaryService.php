@@ -33,15 +33,31 @@ class CloudinaryService
     public function upload(UploadedFile $file, string $folder = 'uploads', array $options = []): array
     {
         try {
+            // Determine if file is PDF or document (should be uploaded as raw)
+            $mimeType = $file->getMimeType();
+            $extension = strtolower($file->getClientOriginalExtension());
+            
+            $isPdf = $mimeType === 'application/pdf' || $extension === 'pdf';
+            $isDocument = in_array($extension, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt']);
+            
+            // Set appropriate resource_type and access_mode
+            $resourceType = ($isPdf || $isDocument) ? 'raw' : 'auto';
+            $accessMode = ($isPdf || $isDocument) ? 'public' : null;
+            
             // Default options
             $defaultOptions = [
                 'folder' => $folder,
-                'resource_type' => 'auto',
+                'resource_type' => $resourceType,
                 'use_filename' => true,
                 'unique_filename' => true,
             ];
+            
+            // Add access_mode for raw files (PDFs, documents)
+            if ($accessMode) {
+                $defaultOptions['access_mode'] = $accessMode;
+            }
 
-            // Merge with custom options
+            // Merge with custom options (custom options can override defaults)
             $uploadOptions = array_merge($defaultOptions, $options);
 
             // Upload to Cloudinary
@@ -54,6 +70,8 @@ class CloudinaryService
                 'public_id' => $result['public_id'],
                 'url' => $result['secure_url'],
                 'folder' => $folder,
+                'resource_type' => $resourceType,
+                'is_pdf' => $isPdf,
             ]);
 
             return [
@@ -82,10 +100,51 @@ class CloudinaryService
      */
     public function uploadCertificate(UploadedFile $file, int $userId): array
     {
+        // Explicitly set resource_type based on file type
+        $extension = strtolower($file->getClientOriginalExtension());
+        $isPdf = $extension === 'pdf';
+        
         return $this->upload($file, 'certificates', [
             'public_id' => 'certificate_' . $userId . '_' . time(),
             'tags' => ['certificate', 'user_' . $userId],
+            'resource_type' => $isPdf ? 'raw' : 'image',
+            'access_mode' => $isPdf ? 'public' : null,
         ]);
+    }
+
+    /**
+     * Upload an image file (JPG, PNG, etc.)
+     * 
+     * @param UploadedFile $file
+     * @param string $folder
+     * @param array $options
+     * @return array
+     */
+    public function uploadImage(UploadedFile $file, string $folder = 'images', array $options = []): array
+    {
+        $defaultOptions = [
+            'resource_type' => 'image',
+        ];
+        
+        return $this->upload($file, $folder, array_merge($defaultOptions, $options));
+    }
+
+    /**
+     * Upload a PDF or document file
+     * 
+     * @param UploadedFile $file
+     * @param string $folder
+     * @param array $options
+     * @return array
+     */
+    public function uploadPdf(UploadedFile $file, string $folder = 'documents', array $options = []): array
+    {
+        $defaultOptions = [
+            'resource_type' => 'raw',
+            'access_mode' => 'public',
+        ];
+        
+        return $this->upload($file, $folder, array_merge($defaultOptions, $options));
     }
 
     /**
@@ -100,6 +159,8 @@ class CloudinaryService
         return $this->upload($file, 'resumes', [
             'public_id' => 'resume_' . $userId . '_' . time(),
             'tags' => ['resume', 'user_' . $userId],
+            'resource_type' => 'raw',
+            'access_mode' => 'public',
         ]);
     }
 
@@ -135,9 +196,14 @@ class CloudinaryService
      */
     public function uploadPoster(UploadedFile $file, int $userId, int $eventId): array
     {
+        $extension = strtolower($file->getClientOriginalExtension());
+        $isPdf = $extension === 'pdf';
+        
         return $this->upload($file, 'posters', [
             'public_id' => 'poster_' . $eventId . '_' . $userId . '_' . time(),
             'tags' => ['poster', 'event_' . $eventId, 'user_' . $userId],
+            'resource_type' => $isPdf ? 'raw' : 'image',
+            'access_mode' => $isPdf ? 'public' : null,
         ]);
     }
 

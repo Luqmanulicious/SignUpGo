@@ -68,10 +68,43 @@
                                 <span class="meta-icon">🎭</span>
                                 <span class="meta-text"><strong>Role:</strong> {{ ucfirst($registration->role) }}</span>
                             </div>
-                            <div class="meta-item">
-                                <span class="meta-icon">✅</span>
-                                <span class="meta-text"><strong>Checked In:</strong> {{ $registration->checked_in_at->format('M d, Y h:i A') }}</span>
-                            </div>
+                            
+                            @php
+                                $isConference = !empty($event->conference_categories);
+                                $role = $registration->role;
+                            @endphp
+                            
+                            {{-- Different status display based on role --}}
+                            @if(($role === 'participant' && $isConference) || $role === 'jury')
+                                {{-- Conference Participants & Jury: Show check-in status --}}
+                                @if($registration->checked_in_at)
+                                    <div class="meta-item">
+                                        <span class="meta-icon">✅</span>
+                                        <span class="meta-text"><strong>Checked In:</strong> {{ $registration->checked_in_at->format('M d, Y h:i A') }}</span>
+                                    </div>
+                                @endif
+                            @elseif($role === 'participant' && !$isConference)
+                                {{-- Innovation Participants: Show payment status --}}
+                                @if($registration->payment_status === 'approved')
+                                    <div class="meta-item">
+                                        <span class="meta-icon">💳</span>
+                                        <span class="meta-text"><strong>Payment:</strong> Approved</span>
+                                    </div>
+                                @endif
+                            @elseif($role === 'reviewer')
+                                {{-- Reviewers: Show evaluations status --}}
+                                @php
+                                    $completedCount = \DB::table('jury_mappings')
+                                        ->where('event_id', $event->id)
+                                        ->where('reviewer_registration_id', $registration->id)
+                                        ->where('status', 'completed')
+                                        ->count();
+                                @endphp
+                                <div class="meta-item">
+                                    <span class="meta-icon">📝</span>
+                                    <span class="meta-text"><strong>Evaluations:</strong> {{ $completedCount }} Completed</span>
+                                </div>
+                            @endif
                         </div>
 
                         @if($hasFeedback)

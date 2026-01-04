@@ -52,15 +52,28 @@ class EventDashboardController extends Controller
                     ->orderBy('name')
                     ->get();
                 
-                // Get themes based on event type
+                // Get categories and themes based on which fields are populated
+                $categories = [];
                 $themes = [];
-                if ($event->event_type === 'innovation') {
+                
+                // Check if innovation fields are populated (Innovation Event)
+                if (!empty($event->innovation_categories) || !empty($event->innovation_theme)) {
+                    // Innovation events have both categories and themes
+                    $categories = $event->innovation_categories ?? [];
                     $themes = $event->innovation_theme ?? [];
-                } elseif ($event->event_type === 'conference') {
-                    $themes = $event->conference_categories ?? [];
+                } 
+                // Otherwise check conference fields (Conference Event)
+                elseif (!empty($event->conference_categories)) {
+                    // Conference events only have categories (no theme)
+                    $categories = $event->conference_categories ?? [];
                 }
+                
+                // Load payment settings for this event
+                $paymentSettings = DB::table('payment_settings')
+                    ->where('event_id', $event->id)
+                    ->first();
                     
-                return view('event-dashboard.participant', compact('event', 'registration', 'paper', 'paperCategories', 'themes'));
+                return view('event-dashboard.participant', compact('event', 'registration', 'paper', 'paperCategories', 'categories', 'themes', 'paymentSettings'));
             
             case 'reviewer':
                 // Load assigned participants for this reviewer
@@ -211,17 +224,18 @@ class EventDashboardController extends Controller
 
         // Validate input
         $rules = [
-            'paper_title' => 'required|string|max:255',
-            'paper_abstract' => 'required|string|max:2000',
-            'paper_poster' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            'paper_video_url' => 'nullable|url|max:500',
-            'paper_category_id' => 'nullable|exists:paper_categories,id',
+            'title' => 'required|string|max:255',
+            'abstract' => 'required|string|max:2000',
+            'poster' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'video_url' => 'nullable|url|max:500',
+            'product_category' => 'required|string|max:255',
+            'product_theme' => 'nullable|string|max:255',
         ];
 
         $validated = $request->validate($rules);
 
         // Handle poster upload if new file provided
-        if ($request->hasFile('paper_poster')) {
+        if ($request->hasFile('poster')) {
             $cloudinary = new CloudinaryService();
             
             // Delete old poster if exists
@@ -230,7 +244,7 @@ class EventDashboardController extends Controller
             }
 
             $result = $cloudinary->uploadPoster(
-                $request->file('paper_poster'),
+                $request->file('poster'),
                 Auth::id(),
                 $paper->event_id
             );
@@ -238,11 +252,11 @@ class EventDashboardController extends Controller
         }
 
         // Update paper fields
-        $paper->title = $request->paper_title;
-        $paper->abstract = $request->paper_abstract;
-        $paper->video_url = $request->paper_video_url;
-        // Note: paper_category_id is legacy, we now use product_category and product_theme strings
-        $paper->paper_category_id = $request->paper_category_id;
+        $paper->title = $request->title;
+        $paper->abstract = $request->abstract;
+        $paper->video_url = $request->video_url;
+        $paper->product_category = $request->product_category;
+        $paper->product_theme = $request->product_theme;
 
         // Handle submission status
         if ($request->has('submit_paper') && $paper->status === 'draft') {

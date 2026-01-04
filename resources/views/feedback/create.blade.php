@@ -89,7 +89,7 @@
                                 @enderror
                             </div>
 
-                            @if($registration->event->delivery_mode === 'online')
+                            @if(in_array($registration->event->delivery_mode, ['online', 'hybrid']))
                                 <!-- Platform Rating -->
                                 <div class="rating-box">
                                     <div class="rating-label">Platform/Technology</div>
@@ -100,7 +100,9 @@
                                         @endfor
                                     </div>
                                 </div>
-                            @else
+                            @endif
+                            
+                            @if(in_array($registration->event->delivery_mode, ['face_to_face', 'hybrid']))
                                 <!-- Venue Rating -->
                                 <div class="rating-box">
                                     <div class="rating-label">Venue & Facilities</div>
@@ -139,8 +141,8 @@
                             </div>
 
                             <div class="comment-box">
-                                <div class="comment-label">System Feedback</div>
-                                <textarea name="system_feedback" class="form-control" rows="5" placeholder="Share your experience with our registration and event management system...">{{ old('system_feedback') }}</textarea>
+                                <div class="comment-label">System Feedback <span class="text-danger">*</span></div>
+                                <textarea name="system_feedback" class="form-control" rows="5" placeholder="Share your experience with our registration and event management system..." required>{{ old('system_feedback') }}</textarea>
                                 <div class="form-text">Tell us about your experience using our platform</div>
                                 @error('system_feedback')
                                     <div class="text-danger small mt-2">{{ $message }}</div>

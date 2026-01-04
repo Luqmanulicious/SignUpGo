@@ -256,7 +256,8 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                     <h3 style="margin: 0; color: #2c3e50; font-size: 1.3rem;">
                         @php
-                            $isInnovation = stripos($event->event_type, 'innovation') !== false;
+                            // Determine if Innovation event based on populated fields
+                            $isInnovation = !empty($event->innovation_categories) || !empty($event->innovation_theme);
                         @endphp
                         {{ $isInnovation ? '🎨 Product Submission' : '📄 Paper Submission' }}
                     </h3>
@@ -356,30 +357,32 @@
                                 <select name="product_category" required
                                     style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 0.9rem;">
                                     <option value="">-- Select Category --</option>
-                                    @foreach ($paperCategories as $category)
-                                        <option value="{{ $category->name }}"
-                                            {{ $paper->product_category === $category->name ? 'selected' : '' }}>
-                                            {{ $category->name }}
+                                    @foreach ($categories as $category)
+                                        <option value="{{ $category }}"
+                                            {{ $paper->product_category === $category ? 'selected' : '' }}>
+                                            {{ $category }}
                                         </option>
                                     @endforeach
                                 </select>
                             </div>
 
-                            <div style="margin-bottom: 1rem;">
-                                <label
-                                    style="display: block; margin-bottom: 0.5rem; color: #4b5563; font-weight: 600; font-size: 0.9rem;">Theme
-                                    *</label>
-                                <select name="product_theme" required
-                                    style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 0.9rem;">
-                                    <option value="">-- Select Theme --</option>
-                                    @foreach ($themes as $theme)
-                                        <option value="{{ $theme }}"
-                                            {{ $paper->product_theme === $theme ? 'selected' : '' }}>
-                                            {{ $theme }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
+                            @if ($isInnovation)
+                                <div style="margin-bottom: 1rem;">
+                                    <label
+                                        style="display: block; margin-bottom: 0.5rem; color: #4b5563; font-weight: 600; font-size: 0.9rem;">Theme
+                                        *</label>
+                                    <select name="product_theme" required
+                                        style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 0.9rem;">
+                                        <option value="">-- Select Theme --</option>
+                                        @foreach ($themes as $theme)
+                                            <option value="{{ $theme }}"
+                                                {{ $paper->product_theme === $theme ? 'selected' : '' }}>
+                                                {{ $theme }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
 
                             <div style="margin-bottom: 1rem;">
                                 <label
@@ -461,24 +464,26 @@
                                 <select name="product_category" required
                                     style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 0.9rem;">
                                     <option value="">-- Select Category --</option>
-                                    @foreach ($paperCategories as $category)
-                                        <option value="{{ $category->name }}">{{ $category->name }}</option>
+                                    @foreach ($categories as $category)
+                                        <option value="{{ $category }}">{{ $category }}</option>
                                     @endforeach
                                 </select>
                             </div>
 
-                            <div style="margin-bottom: 1rem;">
-                                <label
-                                    style="display: block; margin-bottom: 0.5rem; color: #4b5563; font-weight: 600; font-size: 0.9rem;">Theme
-                                    *</label>
-                                <select name="product_theme" required
-                                    style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 0.9rem;">
-                                    <option value="">-- Select Theme --</option>
-                                    @foreach ($themes as $theme)
-                                        <option value="{{ $theme }}">{{ $theme }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                            @if ($isInnovation)
+                                <div style="margin-bottom: 1rem;">
+                                    <label
+                                        style="display: block; margin-bottom: 0.5rem; color: #4b5563; font-weight: 600; font-size: 0.9rem;">Theme
+                                        *</label>
+                                    <select name="product_theme" required
+                                        style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 0.9rem;">
+                                        <option value="">-- Select Theme --</option>
+                                        @foreach ($themes as $theme)
+                                            <option value="{{ $theme }}">{{ $theme }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
 
                             <div style="margin-bottom: 1rem;">
                                 <label
@@ -545,7 +550,8 @@
                         <div
                             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 12px; text-align: center; color: white; margin-top: 2rem;">
                             <div style="font-size: 3rem; margin-bottom: 1rem;">🔒</div>
-                            <h4 style="margin: 0 0 0.5rem 0; color: white; font-size: 1.2rem;">Presentation Details Locked</h4>
+                            <h4 style="margin: 0 0 0.5rem 0; color: white; font-size: 1.2rem;">Presentation Details Locked
+                            </h4>
                             <p style="margin: 0 0 1.5rem 0; font-size: 0.95rem; opacity: 0.9;">
                                 Complete your payment to view presentation schedule, venue details, and event materials
                             </p>
@@ -634,6 +640,8 @@
                                         <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #721c24;">
                                             <strong>Reason:</strong> {{ $registration->payment_notes }}
                                         </p>
+                                        <br>
+                                        <p style="margin: 0 0 0.5rem 0; color: #721c24; font-size: 0.8rem;">You must resubmit your payment to proceed with your registration.</p>
                                     @endif
                                 </div>
                                 <button type="button" data-bs-toggle="modal" data-bs-target="#paymentModal"
@@ -671,103 +679,132 @@
 
                 <!-- Attendance Section - Only for Conference Events -->
                 @php
-                    $isConference = stripos($event->event_type ?? '', 'conference') !== false;
+                    // Determine if Conference event based on populated fields
+                    $isConference = !empty($event->conference_categories);
+                    
+                    // Define event timing variables (used by both conference and innovation participants)
+                    $eventStarted = $event->start_date && now()->gte($event->start_date);
+                    $eventEnded = $event->end_date && now()->gt($event->end_date);
+                    $eventActive = $eventStarted && !$eventEnded;
                 @endphp
 
                 @if ($isConference)
-                    <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div
+                        style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                         @php
-                            $eventStarted = $event->start_date && now()->gte($event->start_date);
-                            $eventEnded = $event->end_date && now()->gt($event->end_date);
-                            $eventActive = $eventStarted && !$eventEnded;
                             // QR code functionality temporarily disabled
                             $presentationQR = null;
 
-                        // Check if jury has evaluated this participant
-                        $juryEvaluations = \DB::table('jury_mappings')
-                            ->where('participant_registration_id', $registration->id)
-                            ->where('event_id', $event->id)
-                            ->where('status', 'evaluated')
-                            ->get();
+                            // Check if jury has evaluated this participant
+                            $juryEvaluations = \DB::table('jury_mappings')
+                                ->where('participant_registration_id', $registration->id)
+                                ->where('event_id', $event->id)
+                                ->where('status', 'evaluated')
+                                ->get();
 
-                        $totalJuries = \DB::table('jury_mappings')
-                            ->where('participant_registration_id', $registration->id)
-                            ->where('event_id', $event->id)
-                            ->count();
+                            $totalJuries = \DB::table('jury_mappings')
+                                ->where('participant_registration_id', $registration->id)
+                                ->where('event_id', $event->id)
+                                ->count();
 
-                        $evaluationsReceived = $juryEvaluations->count();
-                    @endphp
+                            $evaluationsReceived = $juryEvaluations->count();
+                        @endphp
 
-                    <h3 style="margin: 0 0 1.5rem 0; color: #2c3e50; font-size: 1.3rem; text-align: center;">Attendance
-                    </h3>
+                        <h3 style="margin: 0 0 1.5rem 0; color: #2c3e50; font-size: 1.3rem; text-align: center;">Attendance
+                        </h3>
 
-                    @if ($registration->checked_in_at)
-                        <div style="background: #c8e6c9; padding: 1.5rem; border-radius: 8px; text-align: center;">
-                            <p style="margin: 0; color: #1b5e20; font-weight: 600; font-size: 1.1rem;">✓ Checked In</p>
-                            <p style="margin: 0.5rem 0 0 0; color: #2e7d32; font-size: 0.85rem;">
-                                {{ $registration->checked_in_at->format('M d, Y h:i A') }}</p>
+                        @if ($registration->checked_in_at)
+                            <div style="background: #c8e6c9; padding: 1.5rem; border-radius: 8px; text-align: center;">
+                                <p style="margin: 0; color: #1b5e20; font-weight: 600; font-size: 1.1rem;">✓ Checked In</p>
+                                <p style="margin: 0.5rem 0 0 0; color: #2e7d32; font-size: 0.85rem;">
+                                    {{ $registration->checked_in_at->format('M d, Y h:i A') }}</p>
 
-                            @if ($eventEnded)
-                                <a href="{{ route('feedback.create', $registration) }}"
-                                    style="display: inline-block; margin-top: 1rem; padding: 0.75rem 1.5rem; background: #27ae60; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.3s;"
-                                    onmouseover="this.style.background='#229954'"
-                                    onmouseout="this.style.background='#27ae60'">
-                                    💬 Submit Event Feedback
-                                </a>
-                            @endif
-                        </div>
-                    @elseif(!$eventStarted)
-                        <div style="background: #fff3cd; padding: 2rem; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📅</div>
-                            <p style="margin: 0; color: #856404; font-weight: 600;">Attendance check-in will be available
-                                during the event</p>
-                            <p style="margin: 0.5rem 0 0 0; color: #856404; font-size: 0.85rem;">
-                                Event starts: {{ $event->start_date->format('M d, Y h:i A') }}</p>
-                        </div>
-                    @elseif($eventEnded)
-                        <div style="background: #ffebee; padding: 2rem; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔒</div>
-                            <p style="margin: 0; color: #c62828; font-weight: 600;">Attendance check-in is no longer
-                                available</p>
-                            <p style="margin: 0.5rem 0 0 0; color: #d32f2f; font-size: 0.85rem;">
-                                Event ended: {{ $event->end_date->format('M d, Y h:i A') }}</p>
-                        </div>
-                    @else
-                        @if ($presentationQR)
-                            <div style="text-align: center; margin-bottom: 1.5rem;">
-                                <p style="margin: 0 0 1rem 0; color: #2c3e50; font-weight: 600;">Option 1: Scan QR Code</p>
-                                <img src="{{ $presentationQR->qr_image_url }}" alt="Attendance QR Code"
-                                    style="width: 100%; max-width: 250px; border: 4px solid #43e97b; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 1rem;">
-                                <p style="margin: 0 0 0 0; color: #7f8c8d; font-size: 0.9rem;">Scan this QR code at the
-                                    event venue</p>
+                                @if ($eventEnded)
+                                    <a href="{{ route('feedback.create', $registration) }}"
+                                        style="display: inline-block; margin-top: 1rem; padding: 0.75rem 1.5rem; background: #27ae60; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.3s;"
+                                        onmouseover="this.style.background='#229954'"
+                                        onmouseout="this.style.background='#27ae60'">
+                                        💬 Submit Event Feedback
+                                    </a>
+                                @endif
                             </div>
-
-                            <div
-                                style="border-top: 2px solid #e0e0e0; padding-top: 1.5rem; margin-top: 1.5rem; text-align: center;">
-                                <p style="margin: 0 0 1rem 0; color: #2c3e50; font-weight: 600;">Option 2: Manual Check-In
-                                </p>
+                        @elseif(!$eventStarted)
+                            <div style="background: #fff3cd; padding: 2rem; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📅</div>
+                                <p style="margin: 0; color: #856404; font-weight: 600;">Attendance check-in will be
+                                    available
+                                    during the event</p>
+                                <p style="margin: 0.5rem 0 0 0; color: #856404; font-size: 0.85rem;">
+                                    Event starts: {{ $event->start_date->format('M d, Y h:i A') }}</p>
+                            </div>
+                        @elseif($eventEnded)
+                            <div style="background: #ffebee; padding: 2rem; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔒</div>
+                                <p style="margin: 0; color: #c62828; font-weight: 600;">Attendance check-in is no longer
+                                    available</p>
+                                <p style="margin: 0.5rem 0 0 0; color: #d32f2f; font-size: 0.85rem;">
+                                    Event ended: {{ $event->end_date->format('M d, Y h:i A') }}</p>
                             </div>
                         @else
-                            <div
-                                style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; text-align: center; margin-bottom: 1.5rem;">
-                                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⏳</div>
-                                <p style="margin: 0; color: #856404;">QR code is being generated...</p>
-                            </div>
+                            @if ($presentationQR)
+                                <div style="text-align: center; margin-bottom: 1.5rem;">
+                                    <p style="margin: 0 0 1rem 0; color: #2c3e50; font-weight: 600;">Option 1: Scan QR Code
+                                    </p>
+                                    <img src="{{ $presentationQR->qr_image_url }}" alt="Attendance QR Code"
+                                        style="width: 100%; max-width: 250px; border: 4px solid #43e97b; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 1rem;">
+                                    <p style="margin: 0 0 0 0; color: #7f8c8d; font-size: 0.9rem;">Scan this QR code at the
+                                        event venue</p>
+                                </div>
 
-                            <div style="border-top: 2px solid #e0e0e0; padding-top: 1.5rem; text-align: center;">
-                                <p style="margin: 0 0 1rem 0; color: #2c3e50; font-weight: 600;">Manual Check-In</p>
-                            </div>
-                        @endif
+                                <div
+                                    style="border-top: 2px solid #e0e0e0; padding-top: 1.5rem; margin-top: 1.5rem; text-align: center;">
+                                    <p style="margin: 0 0 1rem 0; color: #2c3e50; font-weight: 600;">Option 2: Manual
+                                        Check-In
+                                    </p>
+                                </div>
+                            @else
+                                <div
+                                    style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; text-align: center; margin-bottom: 1.5rem;">
+                                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⏳</div>
+                                    <p style="margin: 0; color: #856404;">QR code is being generated...</p>
+                                </div>
 
-                        <button id="manualCheckInBtn"
-                            style="width: 100%; padding: 0.75rem; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s;">
-                            ✓ Mark Attendance Manually
-                        </button>
-                        <div id="checkInMessage"
-                            style="display: none; margin-top: 0.75rem; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                                <div style="border-top: 2px solid #e0e0e0; padding-top: 1.5rem; text-align: center;">
+                                    <p style="margin: 0 0 1rem 0; color: #2c3e50; font-weight: 600;">Manual Check-In</p>
+                                </div>
+                            @endif
+
+                            <button id="manualCheckInBtn"
+                                style="width: 100%; padding: 0.75rem; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s;">
+                                ✓ Mark Attendance Manually
+                            </button>
+                            <div id="checkInMessage"
+                                style="display: none; margin-top: 0.75rem; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                            </div>
+                    </div>
+                @endif
+                @endif
+
+                <!-- Feedback Section - For Innovation Participants -->
+                @if (!$isConference && $eventEnded && $paymentApproved)
+                    <div
+                        style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 1.5rem 0; color: #2c3e50; font-size: 1.3rem; text-align: center;">Event Feedback</h3>
+                        
+                        <div style="background: #e8f5e9; padding: 1.5rem; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">💬</div>
+                            <p style="margin: 0 0 0.5rem 0; color: #2e7d32; font-weight: 600;">Share Your Experience</p>
+                            <p style="margin: 0 0 1.5rem 0; color: #558b2f; font-size: 0.85rem;">
+                                The event has ended. We'd love to hear your feedback!
+                            </p>
+                            <a href="{{ route('feedback.create', $registration) }}"
+                                style="display: inline-block; padding: 0.75rem 1.5rem; background: #27ae60; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.3s;"
+                                onmouseover="this.style.background='#229954'"
+                                onmouseout="this.style.background='#27ae60'">
+                                💬 Submit Event Feedback
+                            </a>
                         </div>
                     </div>
-                    @endif
                 @endif
             </div>
         </div>
@@ -867,7 +904,8 @@
                             <div style="font-size: 3rem; margin-bottom: 1rem;">⏳</div>
                             <h4 style="margin: 0 0 0.5rem 0; color: #856404;">Payment Already Submitted</h4>
                             <p style="margin: 0; color: #856404;">
-                                Your payment receipt is currently under review. Please wait for the organizer to verify your payment.
+                                Your payment receipt is currently under review. Please wait for the organizer to verify your
+                                payment.
                             </p>
                             @if ($registration->payment_receipt_path)
                                 <div style="margin-top: 1.5rem;">
@@ -889,20 +927,78 @@
                             </div>
                         </div>
 
-                        @if ($event->payment_qr_code)
-                            <div class="payment-qr-section">
-                                <h5>Scan QR Code to Pay</h5>
-                                <img src="{{ Storage::url($event->payment_qr_code) }}" alt="Payment QR Code">
-                                <p>Scan this QR code with your banking app to complete the payment</p>
-                            </div>
+                        @if ($paymentSettings)
+                            {{-- Display Payment QR Code --}}
+                            @if ($paymentSettings->qr_code_url)
+                                <div class="payment-qr-section">
+                                    <h5>Scan QR Code to Pay</h5>
+                                    <img src="{{ $paymentSettings->qr_code_url }}" alt="Payment QR Code">
+                                    <p>Scan this QR code with your banking app to complete the payment</p>
+                                </div>
+                            @endif
+
+                            {{-- Display Bank Transfer Details --}}
+                            @if ($paymentSettings->bank_name || $paymentSettings->account_number)
+                                <div
+                                    style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0; border-left: 5px solid #28a745;">
+                                    <h5 style="font-size: 1.1rem; color: #2c3e50; margin-bottom: 1rem; font-weight: 600;">
+                                        🏦 Bank Transfer Details
+                                    </h5>
+                                    <div style="background: white; padding: 1.25rem; border-radius: 8px;">
+                                        @if ($paymentSettings->bank_name)
+                                            <div
+                                                style="margin-bottom: 0.75rem; display: flex; justify-content: space-between;">
+                                                <span style="color: #6c757d; font-weight: 600;">Bank Name:</span>
+                                                <span
+                                                    style="color: #2c3e50; font-weight: 600;">{{ $paymentSettings->bank_name }}</span>
+                                            </div>
+                                        @endif
+                                        @if ($paymentSettings->account_number)
+                                            <div
+                                                style="margin-bottom: 0.75rem; display: flex; justify-content: space-between;">
+                                                <span style="color: #6c757d; font-weight: 600;">Account Number:</span>
+                                                <span
+                                                    style="color: #2c3e50; font-weight: 600; font-family: monospace; font-size: 1.05rem;">{{ $paymentSettings->account_number }}</span>
+                                            </div>
+                                        @endif
+                                        @if ($paymentSettings->account_holder_name)
+                                            <div
+                                                style="margin-bottom: 0.75rem; display: flex; justify-content: space-between;">
+                                                <span style="color: #6c757d; font-weight: 600;">Account Holder:</span>
+                                                <span
+                                                    style="color: #2c3e50; font-weight: 600;">{{ $paymentSettings->account_holder_name }}</span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
+
+                            {{-- Display Payment Instructions --}}
+                            {{-- @if ($paymentSettings->payment_instructions)
+                                <div style="background: #e7f3ff; padding: 1.25rem; border-radius: 8px; margin: 1.5rem 0; border-left: 5px solid #0284c7;">
+                                    <h5 style="font-size: 1rem; color: #0369a1; margin-bottom: 0.75rem; font-weight: 600;">
+                                        📋 Payment Instructions
+                                    </h5>
+                                    <p style="margin: 0; color: #0c4a6e; font-size: 0.9rem; line-height: 1.6; white-space: pre-line;">{{ $paymentSettings->payment_instructions }}</p>
+                                </div>
+                            @endif --}}
                         @else
-                            <div class="payment-warning-box">
-                                <p>⚠️ Payment QR code not available. Please contact the event organizer.</p>
-                            </div>
+                            {{-- Fallback to old event payment_qr_code if payment_settings not configured --}}
+                            @if ($event->payment_qr_code)
+                                <div class="payment-qr-section">
+                                    <h5>Scan QR Code to Pay</h5>
+                                    <img src="{{ Storage::url($event->payment_qr_code) }}" alt="Payment QR Code">
+                                    <p>Scan this QR code with your banking app to complete the payment</p>
+                                </div>
+                            @else
+                                <div class="payment-warning-box">
+                                    <p>⚠️ Payment information not available. Please contact the event organizer.</p>
+                                </div>
+                            @endif
                         @endif
 
-                        <form action="{{ route('event.payment.submit', [$event, $registration]) }}"
-                            method="POST" enctype="multipart/form-data" class="payment-upload-section">
+                        <form action="{{ route('event.payment.submit', [$event, $registration]) }}" method="POST"
+                            enctype="multipart/form-data" class="payment-upload-section">
                             @csrf
                             <h5>Upload Payment Receipt</h5>
                             <p style="color: #6c757d; font-size: 0.9rem; margin-bottom: 1.25rem;">
@@ -913,7 +1009,7 @@
                                 <label for="paymentReceipt" class="form-label">
                                     Payment Receipt <span style="color: #dc3545;">*</span>
                                 </label>
-                                <input type="file" class="form-control" id="paymentReceipt" name="payment_receipt" 
+                                <input type="file" class="form-control" id="paymentReceipt" name="payment_receipt"
                                     required accept="image/*,.pdf">
                                 <div class="form-text">Accepted formats: JPG, PNG, PDF (Max 5MB)</div>
                             </div>
