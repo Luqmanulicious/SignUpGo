@@ -305,8 +305,15 @@
                                 <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem;">
                                     @if ($paper->poster_path)
                                         <div class="poster-preview">
-                                            <h4>Poster</h4>
-                                            <img src="{{ $paper->poster_path }}" alt="Product Poster">
+                                            <h4>{{ $isInnovation ? 'Poster' : 'Paper' }}</h4>
+                                            @if($isInnovation)
+                                                <img src="{{ $paper->poster_path }}" alt="Product Poster">
+                                            @else
+                                                <a href="{{ $paper->poster_path }}" target="_blank" 
+                                                   style="display: inline-block; padding: 0.75rem 1.5rem; background: #3498db; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                                                    📄 View Paper
+                                                </a>
+                                            @endif
                                         </div>
                                     @endif
                                     @if ($paper->video_url)
@@ -395,9 +402,12 @@
                             <div style="margin-bottom: 1rem;">
                                 <label
                                     style="display: block; margin-bottom: 0.5rem; color: #4b5563; font-weight: 600; font-size: 0.9rem;">Update
-                                    Poster (Leave empty to keep current)</label>
-                                <input type="file" name="poster" accept="image/*"
+                                    {{ $isInnovation ? 'Poster' : 'Paper' }} (Leave empty to keep current)</label>
+                                <input type="file" name="poster" accept="{{ $isInnovation ? 'image/*' : '.doc,.docx,.pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf' }}"
                                     style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 0.9rem;">
+                                @if(!$isInnovation)
+                                    <small style="color: #6c757d; font-size: 0.85rem;">Accepted formats: DOC, DOCX, PDF</small>
+                                @endif
                             </div>
 
                             <div style="margin-bottom: 1rem;">
@@ -495,10 +505,13 @@
 
                             <div style="margin-bottom: 1rem;">
                                 <label
-                                    style="display: block; margin-bottom: 0.5rem; color: #4b5563; font-weight: 600; font-size: 0.9rem;">Poster
+                                    style="display: block; margin-bottom: 0.5rem; color: #4b5563; font-weight: 600; font-size: 0.9rem;">{{ $isInnovation ? 'Poster' : 'Paper' }}
                                     *</label>
-                                <input type="file" name="poster" accept="image/*" required
+                                <input type="file" name="poster" accept="{{ $isInnovation ? 'image/*' : '.doc,.docx,.pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf' }}" required
                                     style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 0.9rem;">
+                                @if(!$isInnovation)
+                                    <small style="color: #6c757d; font-size: 0.85rem;">Accepted formats: DOC, DOCX, PDF</small>
+                                @endif
                             </div>
 
 
@@ -571,15 +584,26 @@
                                 <span
                                     style="color: #6b7280;">{{ $event->start_date ? $event->start_date->format('M d, Y h:i A') : 'TBA' }}</span>
                             </div>
-                            <div style="margin-bottom: 1rem;">
-                                <strong style="color: #4b5563;">Venue:</strong>
-                                <span style="color: #6b7280;">{{ $event->venue_name ?? 'Online' }}</span>
-                            </div>
-                            @if ($event->venue_address)
+                            
+                            @if(in_array($event->delivery_mode, ['online', 'hybrid']) && $event->online_platform_url)
                                 <div style="margin-bottom: 1rem;">
-                                    <strong style="color: #4b5563;">Address:</strong>
-                                    <span style="color: #6b7280;">{{ $event->venue_address }}</span>
+                                    <strong style="color: #4b5563;">Online Platform:</strong>
+                                    <a href="{{ $event->online_platform_url }}" target="_blank" 
+                                       style="color: #3498db; text-decoration: underline;">{{ $event->online_platform_url }}</a>
                                 </div>
+                            @endif
+                            
+                            @if(in_array($event->delivery_mode, ['face_to_face', 'hybrid']))
+                                <div style="margin-bottom: 1rem;">
+                                    <strong style="color: #4b5563;">Venue:</strong>
+                                    <span style="color: #6b7280;">{{ $event->venue_name ?? 'TBA' }}</span>
+                                </div>
+                                @if ($event->venue_address)
+                                    <div style="margin-bottom: 1rem;">
+                                        <strong style="color: #4b5563;">Address:</strong>
+                                        <span style="color: #6b7280;">{{ $event->venue_address }}</span>
+                                    </div>
+                                @endif
                             @endif
                             <div
                                 style="background: #e0f2fe; padding: 1rem; border-radius: 6px; border-left: 4px solid #0284c7; margin-top: 1rem;">

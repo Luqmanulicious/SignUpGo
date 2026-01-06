@@ -460,6 +460,11 @@
             transition: transform 0.5s ease-in-out;
         }
 
+        .carousel-slide {
+            min-width: 100%;
+            flex-shrink: 0;
+        }
+
     .carousel-arrow {
         position: absolute;
         top: 50%;
@@ -498,11 +503,15 @@
         opacity: 0.3;
         cursor: not-allowed;
     }
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
 
-        .carousel-dot {
+    .carousel-indicators {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .carousel-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
@@ -641,14 +650,24 @@
                     $config = $eventTypeConfig[$eventType];
                     $registrations = $eventTypeGroups->get($eventType, collect());
                     
-                    // Count roles - always calculate even if 0
-                    $juryCount = $registrations->filter(fn($r) => in_array($r->role, ['jury', 'both']))->count();
-                    $reviewerCount = $registrations->filter(fn($r) => in_array($r->role, ['reviewer', 'both']))->count();
+                    // Count roles - only successful/approved registrations
+                    $juryCount = $registrations->filter(function($r) {
+                        return in_array($r->role, ['jury', 'both']) && in_array($r->status, ['approved', 'confirmed']);
+                    })->count();
                     
-                    // Count only successful participants (exclude rejected)
+                    $reviewerCount = $registrations->filter(function($r) {
+                        return in_array($r->role, ['reviewer', 'both']) && in_array($r->status, ['approved', 'confirmed']);
+                    })->count();
+                    
+                    // Count only successful participants (approved/confirmed and not rejected presentations)
                     $participantCount = $registrations->filter(function($r) use ($eventType) {
                         // Must be participant role
                         if (!in_array($r->role, ['participant', 'both'])) {
+                            return false;
+                        }
+                        
+                        // Must be approved or confirmed
+                        if (!in_array($r->status, ['approved', 'confirmed'])) {
                             return false;
                         }
                         

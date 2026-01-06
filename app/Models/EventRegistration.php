@@ -45,6 +45,7 @@ class EventRegistration extends Model
         'checked_in_at',
         'jury_categories',
         'jury_themes',
+        'reviewer_themes',
     ];
 
     protected $casts = [
@@ -54,6 +55,7 @@ class EventRegistration extends Model
         'checked_in_at' => 'datetime',
         'jury_categories' => 'array',
         'jury_themes' => 'array',
+        'reviewer_themes' => 'array',
     ];
 
     // Relationships

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PaperReview extends Model
 {
@@ -27,6 +28,16 @@ class PaperReview extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewer_id');
+    }
+
+    public function scores(): HasMany
+    {
+        return $this->hasMany(PaperReviewScore::class, 'paper_review_id');
+    }
+
+    public function categoryComments(): HasMany
+    {
+        return $this->hasMany(PaperReviewCategoryComment::class, 'paper_review_id');
     }
 
     public function isSelected(): bool

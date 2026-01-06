@@ -472,19 +472,6 @@
                         </div>
                     </div>
 
-                    @if ($event->delivery_mode === 'online' && $event->online_platform_url)
-                        <div class="info-item">
-                            <div class="info-icon">💻</div>
-                            <div class="info-content">
-                                <div class="info-label">Online Platform</div>
-                                <p class="info-value">
-                                    <a href="{{ $event->online_platform_url }}" target="_blank"
-                                        style="color: #3498db; text-decoration: underline;">{{ $event->online_platform_url }}</a>
-                                </p>
-                            </div>
-                        </div>
-                    @endif
-
                     @if (in_array($event->delivery_mode, ['face_to_face', 'hybrid']))
                         <div class="info-item">
                             <div class="info-icon">📍</div>
@@ -507,19 +494,6 @@
                                             - {{ $event->country }}
                                         @endif
                                     @endif
-                                </p>
-                            </div>
-                        </div>
-                    @endif
-
-                    @if ($event->delivery_mode === 'hybrid' && $event->online_platform_url)
-                        <div class="info-item">
-                            <div class="info-icon">💻</div>
-                            <div class="info-content">
-                                <div class="info-label">Online Platform (for Hybrid)</div>
-                                <p class="info-value">
-                                    <a href="{{ $event->online_platform_url }}" target="_blank"
-                                        style="color: #3498db; text-decoration: underline;">{{ $event->online_platform_url }}</a>
                                 </p>
                             </div>
                         </div>
@@ -550,23 +524,23 @@
                         $hasPaperDeadline = false;
                         $paperDeadlineText = '';
 
-                        if ($event->delivery_mode === 'face_to_face' && $event->f2f_paper_deadline) {
+                        if ($event->delivery_mode === 'face_to_face' && $event->f2f_paper_submission_deadline) {
                             $hasPaperDeadline = true;
-                            $paperDeadlineText = \Carbon\Carbon::parse($event->f2f_paper_deadline)->format(
+                            $paperDeadlineText = \Carbon\Carbon::parse($event->f2f_paper_submission_deadline)->format(
                                 'F d, Y h:i A',
                             );
-                        } elseif ($event->delivery_mode === 'online' && $event->online_paper_deadline) {
+                        } elseif ($event->delivery_mode === 'online' && $event->online_paper_submission_deadline) {
                             $hasPaperDeadline = true;
-                            $paperDeadlineText = \Carbon\Carbon::parse($event->online_paper_deadline)->format(
+                            $paperDeadlineText = \Carbon\Carbon::parse($event->online_paper_submission_deadline)->format(
                                 'F d, Y h:i A',
                             );
                         } elseif ($event->delivery_mode === 'hybrid') {
                             $hasPaperDeadline = true;
-                            $f2fDeadline = $event->f2f_paper_deadline
-                                ? \Carbon\Carbon::parse($event->f2f_paper_deadline)->format('F d, Y h:i A')
+                            $f2fDeadline = $event->f2f_paper_submission_deadline
+                                ? \Carbon\Carbon::parse($event->f2f_paper_submission_deadline)->format('F d, Y h:i A')
                                 : null;
-                            $onlineDeadline = $event->online_paper_deadline
-                                ? \Carbon\Carbon::parse($event->online_paper_deadline)->format('F d, Y h:i A')
+                            $onlineDeadline = $event->online_paper_submission_deadline
+                                ? \Carbon\Carbon::parse($event->online_paper_submission_deadline)->format('F d, Y h:i A')
                                 : null;
 
                             if ($f2fDeadline && $onlineDeadline) {
@@ -580,11 +554,11 @@
                             }
                         } else {
                             // For events without delivery_mode set (e.g., conference events)
-                            $f2fDeadline = $event->f2f_paper_deadline
-                                ? \Carbon\Carbon::parse($event->f2f_paper_deadline)->format('F d, Y h:i A')
+                            $f2fDeadline = $event->f2f_paper_submission_deadline
+                                ? \Carbon\Carbon::parse($event->f2f_paper_submission_deadline)->format('F d, Y h:i A')
                                 : null;
-                            $onlineDeadline = $event->online_paper_deadline
-                                ? \Carbon\Carbon::parse($event->online_paper_deadline)->format('F d, Y h:i A')
+                            $onlineDeadline = $event->online_paper_submission_deadline
+                                ? \Carbon\Carbon::parse($event->online_paper_submission_deadline)->format('F d, Y h:i A')
                                 : null;
 
                             if ($f2fDeadline && $onlineDeadline) {
@@ -1084,35 +1058,35 @@
 
                                     // Check deadline for participant role
                                     if ($role === 'participant') {
-                                        if ($event->delivery_mode === 'face_to_face' && $event->f2f_paper_deadline) {
-                                            if ($now->gt($event->f2f_paper_deadline)) {
+                                        if ($event->delivery_mode === 'face_to_face' && $event->f2f_paper_submission_deadline) {
+                                            if ($now->gt($event->f2f_paper_submission_deadline)) {
                                                 $deadlinePassed = true;
                                                 $deadlineText = \Carbon\Carbon::parse(
-                                                    $event->f2f_paper_deadline,
+                                                    $event->f2f_paper_submission_deadline,
                                                 )->format('M d, Y h:i A');
                                             }
-                                        } elseif ($event->delivery_mode === 'online' && $event->online_paper_deadline) {
-                                            if ($now->gt($event->online_paper_deadline)) {
+                                        } elseif ($event->delivery_mode === 'online' && $event->online_paper_submission_deadline) {
+                                            if ($now->gt($event->online_paper_submission_deadline)) {
                                                 $deadlinePassed = true;
                                                 $deadlineText = \Carbon\Carbon::parse(
-                                                    $event->online_paper_deadline,
+                                                    $event->online_paper_submission_deadline,
                                                 )->format('M d, Y h:i A');
                                             }
                                         } elseif ($event->delivery_mode === 'hybrid') {
                                             $f2fPassed =
-                                                $event->f2f_paper_deadline && $now->gt($event->f2f_paper_deadline);
+                                                $event->f2f_paper_submission_deadline && $now->gt($event->f2f_paper_submission_deadline);
                                             $onlinePassed =
-                                                $event->online_paper_deadline &&
-                                                $now->gt($event->online_paper_deadline);
+                                                $event->online_paper_submission_deadline &&
+                                                $now->gt($event->online_paper_submission_deadline);
                                             $f2fAvailable = !$f2fPassed;
                                             $onlineAvailable = !$onlinePassed;
-                                            $f2fDeadlineText = $event->f2f_paper_deadline
-                                                ? \Carbon\Carbon::parse($event->f2f_paper_deadline)->format(
+                                            $f2fDeadlineText = $event->f2f_paper_submission_deadline
+                                                ? \Carbon\Carbon::parse($event->f2f_paper_submission_deadline)->format(
                                                     'M d, Y h:i A',
                                                 )
                                                 : '';
-                                            $onlineDeadlineText = $event->online_paper_deadline
-                                                ? \Carbon\Carbon::parse($event->online_paper_deadline)->format(
+                                            $onlineDeadlineText = $event->online_paper_submission_deadline
+                                                ? \Carbon\Carbon::parse($event->online_paper_submission_deadline)->format(
                                                     'M d, Y h:i A',
                                                 )
                                                 : '';
@@ -1122,19 +1096,19 @@
                                             }
                                         } else {
                                             $f2fPassed =
-                                                $event->f2f_paper_deadline && $now->gt($event->f2f_paper_deadline);
+                                                $event->f2f_paper_submission_deadline && $now->gt($event->f2f_paper_submission_deadline);
                                             $onlinePassed =
-                                                $event->online_paper_deadline &&
-                                                $now->gt($event->online_paper_deadline);
+                                                $event->online_paper_submission_deadline &&
+                                                $now->gt($event->online_paper_submission_deadline);
                                             if ($f2fPassed || $onlinePassed) {
                                                 $deadlinePassed = true;
-                                                if ($f2fPassed && $event->f2f_paper_deadline) {
+                                                if ($f2fPassed && $event->f2f_paper_submission_deadline) {
                                                     $deadlineText = \Carbon\Carbon::parse(
-                                                        $event->f2f_paper_deadline,
+                                                        $event->f2f_paper_submission_deadline,
                                                     )->format('M d, Y h:i A');
-                                                } elseif ($onlinePassed && $event->online_paper_deadline) {
+                                                } elseif ($onlinePassed && $event->online_paper_submission_deadline) {
                                                     $deadlineText = \Carbon\Carbon::parse(
-                                                        $event->online_paper_deadline,
+                                                        $event->online_paper_submission_deadline,
                                                     )->format('M d, Y h:i A');
                                                 }
                                             }
@@ -1404,35 +1378,35 @@
 
                                     // Check deadline for participant role
                                     if ($role === 'participant') {
-                                        if ($event->delivery_mode === 'face_to_face' && $event->f2f_paper_deadline) {
-                                            if ($now->gt($event->f2f_paper_deadline)) {
+                                        if ($event->delivery_mode === 'face_to_face' && $event->f2f_paper_submission_deadline) {
+                                            if ($now->gt($event->f2f_paper_submission_deadline)) {
                                                 $deadlinePassed = true;
                                                 $deadlineText = \Carbon\Carbon::parse(
-                                                    $event->f2f_paper_deadline,
+                                                    $event->f2f_paper_submission_deadline,
                                                 )->format('M d, Y h:i A');
                                             }
-                                        } elseif ($event->delivery_mode === 'online' && $event->online_paper_deadline) {
-                                            if ($now->gt($event->online_paper_deadline)) {
+                                        } elseif ($event->delivery_mode === 'online' && $event->online_paper_submission_deadline) {
+                                            if ($now->gt($event->online_paper_submission_deadline)) {
                                                 $deadlinePassed = true;
                                                 $deadlineText = \Carbon\Carbon::parse(
-                                                    $event->online_paper_deadline,
+                                                    $event->online_paper_submission_deadline,
                                                 )->format('M d, Y h:i A');
                                             }
                                         } elseif ($event->delivery_mode === 'hybrid') {
                                             $f2fPassed =
-                                                $event->f2f_paper_deadline && $now->gt($event->f2f_paper_deadline);
+                                                $event->f2f_paper_submission_deadline && $now->gt($event->f2f_paper_submission_deadline);
                                             $onlinePassed =
-                                                $event->online_paper_deadline &&
-                                                $now->gt($event->online_paper_deadline);
+                                                $event->online_paper_submission_deadline &&
+                                                $now->gt($event->online_paper_submission_deadline);
                                             $f2fAvailable = !$f2fPassed;
                                             $onlineAvailable = !$onlinePassed;
-                                            $f2fDeadlineText = $event->f2f_paper_deadline
-                                                ? \Carbon\Carbon::parse($event->f2f_paper_deadline)->format(
+                                            $f2fDeadlineText = $event->f2f_paper_submission_deadline
+                                                ? \Carbon\Carbon::parse($event->f2f_paper_submission_deadline)->format(
                                                     'M d, Y h:i A',
                                                 )
                                                 : '';
-                                            $onlineDeadlineText = $event->online_paper_deadline
-                                                ? \Carbon\Carbon::parse($event->online_paper_deadline)->format(
+                                            $onlineDeadlineText = $event->online_paper_submission_deadline
+                                                ? \Carbon\Carbon::parse($event->online_paper_submission_deadline)->format(
                                                     'M d, Y h:i A',
                                                 )
                                                 : '';
@@ -1442,19 +1416,19 @@
                                             }
                                         } else {
                                             $f2fPassed =
-                                                $event->f2f_paper_deadline && $now->gt($event->f2f_paper_deadline);
+                                                $event->f2f_paper_submission_deadline && $now->gt($event->f2f_paper_submission_deadline);
                                             $onlinePassed =
-                                                $event->online_paper_deadline &&
-                                                $now->gt($event->online_paper_deadline);
+                                                $event->online_paper_submission_deadline &&
+                                                $now->gt($event->online_paper_submission_deadline);
                                             if ($f2fPassed || $onlinePassed) {
                                                 $deadlinePassed = true;
-                                                if ($f2fPassed && $event->f2f_paper_deadline) {
+                                                if ($f2fPassed && $event->f2f_paper_submission_deadline) {
                                                     $deadlineText = \Carbon\Carbon::parse(
-                                                        $event->f2f_paper_deadline,
+                                                        $event->f2f_paper_submission_deadline,
                                                     )->format('M d, Y h:i A');
-                                                } elseif ($onlinePassed && $event->online_paper_deadline) {
+                                                } elseif ($onlinePassed && $event->online_paper_submission_deadline) {
                                                     $deadlineText = \Carbon\Carbon::parse(
-                                                        $event->online_paper_deadline,
+                                                        $event->online_paper_submission_deadline,
                                                     )->format('M d, Y h:i A');
                                                 }
                                             }

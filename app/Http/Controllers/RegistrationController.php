@@ -183,9 +183,21 @@ class RegistrationController extends BaseController
                 
                 $rules['paper_title'] = 'required|string|max:255';
                 $rules['paper_abstract'] = 'required|string|max:2000';
-                $rules['paper_poster'] = 'required|file|mimes:jpg,jpeg,png,pdf|max:10240'; // 10MB max
                 $rules['paper_video_url'] = 'nullable|url|max:500';
-                $rules['paper_category'] = 'required|string|max:255';
+                
+                // Only innovation events require category, all events require theme
+                $isInnovation = !empty($event->innovation_categories) || !empty($event->innovation_theme);
+                if ($isInnovation) {
+                    $rules['paper_category'] = 'required|string|max:255';
+                    $rules['paper_poster'] = 'required|file|mimes:jpg,jpeg,png,pdf|max:10240'; // Images for innovation
+                } else {
+                    $rules['paper_poster'] = [
+                        'required',
+                        'file',
+                        'max:10240',
+                        'mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    ];
+                }
                 $rules['paper_theme'] = 'required|string|max:255';
             }
 
@@ -208,9 +220,10 @@ class RegistrationController extends BaseController
                 'attendance_mode.in' => 'Invalid attendance mode selected.',
                 'paper_title.required' => 'Paper title is required for participants.',
                 'paper_abstract.required' => 'Abstract is required for participants.',
-                'paper_poster.required' => 'Poster file is required for participants.',
+                'paper_poster.required' => 'Paper file is required for participants.',
                 'paper_poster.mimes' => 'Poster must be a JPG, JPEG, PNG, or PDF file.',
-                'paper_poster.max' => 'Poster file size must not exceed 10MB.',
+                'paper_poster.mimetypes' => 'Paper must be a Word document (DOC, DOCX) or PDF file.',
+                'paper_poster.max' => 'File size must not exceed 10MB.',
                 'paper_video_url.url' => 'Please enter a valid URL for the video.',
                 'paper_category.required' => 'Please select a product category.',
                 'paper_theme.required' => 'Please select a product/paper theme.',
@@ -357,7 +370,8 @@ class RegistrationController extends BaseController
                 'application_notes' => null,
                 'approved_at' => null, // Will be set when EO approves
                 'jury_categories' => $request->role === 'jury' ? $request->jury_categories : null,
-                'jury_themes' => $request->role === 'jury' ? $request->jury_themes : ($request->role === 'reviewer' ? $request->reviewer_themes : null),
+                'jury_themes' => $request->role === 'jury' ? $request->jury_themes : null,
+                'reviewer_themes' => $request->role === 'reviewer' ? $request->reviewer_themes : null,
             ]);
 
             Log::info('Event registration created', [
@@ -370,9 +384,10 @@ class RegistrationController extends BaseController
 
             // Handle paper submission for participants
             if ($request->role === 'participant') {
-                $posterPath = null;
+                $isInnovation = !empty($event->innovation_categories) || !empty($event->innovation_theme);
+                $filePath = null;
                 
-                // Upload poster file
+                // Upload file
                 if ($request->hasFile('paper_poster')) {
                     $cloudinary = new CloudinaryService();
                     $result = $cloudinary->uploadPoster(
@@ -380,35 +395,48 @@ class RegistrationController extends BaseController
                         Auth::id(),
                         $event->id
                     );
-                    $posterPath = $result['secure_url'];
+                    $filePath = $result['secure_url'];
                     
-                    Log::info('Paper poster uploaded', [
+                    Log::info('Paper file uploaded', [
                         'user_id' => Auth::id(),
                         'event_id' => $event->id,
-                        'url' => $posterPath,
+                        'url' => $filePath,
+                        'type' => $isInnovation ? 'poster' : 'paper',
                     ]);
                 }
 
                 // All papers are drafts by default and can be edited until deadline
                 // Paper is submitted when EO approves the registration
-                $paper = EventPaper::create([
+                $paperData = [
                     'event_id' => $event->id,
                     'user_id' => Auth::id(),
-                    'product_category' => $request->paper_category,
-                    'product_theme' => $request->paper_theme,
                     'title' => $request->paper_title,
                     'abstract' => $request->paper_abstract,
-                    'poster_path' => $posterPath,
                     'video_url' => $request->paper_video_url,
                     'status' => 'draft',
                     'submitted_at' => now(),
-                ]);
+                ];
+                
+                // Add event-type specific fields
+                if ($isInnovation) {
+                    // Innovation: product_category, product_theme, poster_path
+                    $paperData['product_category'] = $request->paper_category;
+                    $paperData['product_theme'] = $request->paper_theme;
+                    $paperData['poster_path'] = $filePath;
+                } else {
+                    // Conference: paper_theme, paper_path
+                    $paperData['paper_theme'] = $request->paper_theme;
+                    $paperData['paper_path'] = $filePath;
+                }
+                
+                $paper = EventPaper::create($paperData);
 
                 Log::info('Paper submission created', [
                     'paper_id' => $paper->id,
                     'user_id' => Auth::id(),
                     'event_id' => $event->id,
                     'status' => 'draft',
+                    'event_type' => $isInnovation ? 'innovation' : 'conference',
                 ]);
             }
 
@@ -558,20 +586,35 @@ class RegistrationController extends BaseController
         }
 
         // Validate
+        $event = $registration->event;
+        $isInnovation = !empty($event->innovation_categories) || !empty($event->innovation_theme);
+        
         $rules = [
             'paper_title' => 'required|string|max:255',
             'paper_abstract' => 'required|string|max:2000',
-            'paper_poster' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
             'paper_video_url' => 'nullable|url|max:500',
-            'paper_category' => 'required|string|max:255',
             'paper_theme' => 'required|string|max:255',
         ];
+        
+        // Only innovation events require category
+        if ($isInnovation) {
+            $rules['paper_category'] = 'required|string|max:255';
+            $rules['paper_poster'] = 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240'; // Images for innovation
+        } else {
+            $rules['paper_poster'] = [
+                'nullable',
+                'file',
+                'max:10240',
+                'mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+        }
 
         $customMessages = [
             'paper_title.required' => 'Paper title is required.',
             'paper_abstract.required' => 'Abstract is required.',
             'paper_poster.mimes' => 'Poster must be a JPG, JPEG, PNG, or PDF file.',
-            'paper_poster.max' => 'Poster file size must not exceed 10MB.',
+            'paper_poster.mimetypes' => 'Paper must be a Word document (DOC, DOCX) or PDF file.',
+            'paper_poster.max' => 'File size must not exceed 10MB.',
             'paper_video_url.url' => 'Please enter a valid URL for the video.',
             'paper_category.required' => 'Please select a product category.',
             'paper_theme.required' => 'Please select a product/paper theme.',
@@ -590,16 +633,23 @@ class RegistrationController extends BaseController
             $paper->title = $request->paper_title;
             $paper->abstract = $request->paper_abstract;
             $paper->video_url = $request->paper_video_url;
-            $paper->product_category = $request->paper_category;
-            $paper->product_theme = $request->paper_theme;
+            
+            // Update event-type specific fields
+            if ($isInnovation) {
+                $paper->product_category = $request->paper_category;
+                $paper->product_theme = $request->paper_theme;
+            } else {
+                $paper->paper_theme = $request->paper_theme;
+            }
 
-            // Handle new poster upload
+            // Handle new file upload
             if ($request->hasFile('paper_poster')) {
                 $cloudinary = new CloudinaryService();
                 
-                // Delete old poster if exists
-                if ($paper->poster_path) {
-                    $cloudinary->deleteByUrl($paper->poster_path);
+                // Delete old file if exists
+                $oldPath = $isInnovation ? $paper->poster_path : $paper->paper_path;
+                if ($oldPath) {
+                    $cloudinary->deleteByUrl($oldPath);
                 }
 
                 $result = $cloudinary->uploadPoster(
@@ -607,7 +657,13 @@ class RegistrationController extends BaseController
                     Auth::id(),
                     $paper->event_id
                 );
-                $paper->poster_path = $result['secure_url'];
+                
+                // Store in appropriate column based on event type
+                if ($isInnovation) {
+                    $paper->poster_path = $result['secure_url'];
+                } else {
+                    $paper->paper_path = $result['secure_url'];
+                }
             }
 
             // Paper remains as draft and can be edited until deadline
@@ -619,6 +675,7 @@ class RegistrationController extends BaseController
                 'paper_id' => $paper->id,
                 'user_id' => Auth::id(),
                 'status' => $paper->status,
+                'event_type' => $isInnovation ? 'innovation' : 'conference',
             ]);
 
             return redirect()->route('registrations.index')

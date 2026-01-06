@@ -45,7 +45,8 @@ class EventController extends Controller
         // Get per_page value from request, default to 10, max 50
         $perPage = min((int) $request->input('per_page', 10), 50);
         
-        $events = $query->orderBy('start_date')->paginate($perPage)->withQueryString();
+        // Sort by newest first (descending order)
+        $events = $query->orderBy('start_date', 'desc')->paginate($perPage)->withQueryString();
         
         // Get categories for filter dropdown
         $categories = \App\Models\EventCategory::orderBy('name')->get();

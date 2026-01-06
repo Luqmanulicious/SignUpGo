@@ -67,6 +67,8 @@ Route::middleware('auth')->group(function () {
     
     // Reviewer Routes
     Route::post('/events/{event}/submit-review/{registration}', [App\Http\Controllers\EventDashboardController::class, 'submitReview'])->name('event.submit-review');
+    Route::get('/events/{event}/review/{mappingId}/scores', [App\Http\Controllers\EventDashboardController::class, 'getReviewScores'])->name('event.get-review-scores');
+    Route::get('/events/{event}/get-review/{mappingId}', [App\Http\Controllers\EventDashboardController::class, 'getReview'])->name('event.get-review');
     
     // Jury Evaluation Routes
     Route::get('/jury/evaluate/{juryMapping}', [App\Http\Controllers\EventDashboardController::class, 'showJuryEvaluationForm'])->name('jury.evaluate');

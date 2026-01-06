@@ -6,6 +6,9 @@
 use Illuminate\Support\Facades\Storage;
 @endphp
 
+<!-- Toast Notification -->
+<x-toast-notification />
+
 @section('styles')
 <style>
     .container { 
@@ -706,7 +709,7 @@ use Illuminate\Support\Facades\Storage;
                     }
                 @endphp
                 
-                {{-- Innovation Events: Show Categories --}}
+                {{-- Innovation Events Only: Show Categories --}}
                 @if($isInnovation && count($categories) > 0)
                 <div class="form-group">
                     <label class="required" for="paper_category">Product Category</label>
@@ -777,15 +780,15 @@ use Illuminate\Support\Facades\Storage;
                 </div>
 
                 <div class="form-group">
-                    <label class="required" for="paper_poster">Upload Poster</label>
+                    <label class="required" for="paper_poster">Upload {{ $isInnovationType ? 'Poster' : 'Paper' }}</label>
                     <input 
                         type="file" 
                         name="paper_poster" 
                         id="paper_poster"
                         class="form-control"
-                        accept=".jpg,.jpeg,.png,.pdf"
+                        accept="{{ $isInnovationType ? 'image/*' : '.doc,.docx,.pdf' }}"
                     >
-                    <p class="help-text">Upload your presentation poster (JPG, PNG, or PDF - Max 10MB)</p>
+                    <p class="help-text">{{ $isInnovationType ? 'Upload your presentation poster (JPG, PNG, or PDF - Max 10MB)' : 'Upload your paper document (DOC, DOCX, or PDF - Max 10MB)' }}</p>
                     @error('paper_poster')
                         <div class="error-text">{{ $message }}</div>
                     @enderror
@@ -805,12 +808,6 @@ use Illuminate\Support\Facades\Storage;
                     @error('paper_video_url')
                         <div class="error-text">{{ $message }}</div>
                     @enderror
-                </div>
-
-                <div style="background: #e3f2fd; padding: 1rem; border-radius: 6px; border-left: 4px solid #2196f3; margin-bottom: 1.5rem;">
-                    <p style="margin: 0; color: #1565c0;">
-                        <strong>ℹ️ Note:</strong> You can edit your paper details anytime before the submission deadline. Your paper will be reviewed by the event organizer once submitted.
-                    </p>
                 </div>
             </div>
 

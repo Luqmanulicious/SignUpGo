@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\EventRegistration;
-use App\Models\EventPaper;use App\Services\CloudinaryService;use Illuminate\Http\Request;
+use App\Models\EventPaper;
+use App\Services\CloudinaryService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
@@ -85,13 +88,12 @@ class EventDashboardController extends Controller
                              ->where('paper.event_id', '=', $event->id);
                     })
                     ->where('jm.event_id', $event->id)
-                    ->where('jm.reviewer_registration_id', $registration->id)
+                    ->where('jm.jury_registration_id', $registration->id)
                     ->select(
                         'jm.id as mapping_id',
                         'jm.status as review_status',
-                        'jm.score',
-                        'jm.review_notes',
-                        'jm.reviewed_at',
+                        'jm.notes as review_notes',
+                        'jm.updated_at as reviewed_at',
                         'participant.id as participant_registration_id',
                         'participant.registration_code as participant_code',
                         'participant_user.name as participant_name',
@@ -102,10 +104,47 @@ class EventDashboardController extends Controller
                         'paper.product_category',
                         'paper.product_theme',
                         'paper.poster_path',
+                        'paper.paper_path',
+                        'paper.paper_theme',
                         'paper.video_url',
                         'paper.status as paper_status'
                     )
                     ->get();
+                
+                // Calculate scores for each assignment and verify actual scores exist
+                foreach ($assignedParticipants as $assignment) {
+                    // Check if there are actual scores in rubric_item_scores table
+                    $scores = DB::table('rubric_item_scores as ris')
+                        ->join('rubric_items as ri', 'ris.rubric_item_id', '=', 'ri.id')
+                        ->where('ris.jury_mapping_id', $assignment->mapping_id)
+                        ->select('ris.score', 'ri.max_score')
+                        ->get();
+                    
+                    if ($scores->isNotEmpty()) {
+                        // Has actual scores - calculate percentage
+                        $totalScore = $scores->sum('score');
+                        $maxScore = $scores->sum('max_score');
+                        $assignment->score = $maxScore > 0 ? round(($totalScore / $maxScore) * 100) : 0;
+                        
+                        // Ensure status is completed
+                        if ($assignment->review_status !== 'completed') {
+                            DB::table('jury_mappings')
+                                ->where('id', $assignment->mapping_id)
+                                ->update(['status' => 'completed', 'updated_at' => now()]);
+                            $assignment->review_status = 'completed';
+                        }
+                    } else {
+                        // No actual scores - reset status to pending
+                        $assignment->score = null;
+                        if ($assignment->review_status === 'completed') {
+                            DB::table('jury_mappings')
+                                ->where('id', $assignment->mapping_id)
+                                ->update(['status' => 'pending', 'notes' => null, 'updated_at' => now()]);
+                            $assignment->review_status = 'pending';
+                            $assignment->review_notes = null;
+                        }
+                    }
+                }
                 
                 // Load rubric categories and items for evaluation
                 $rubricCategories = DB::table('rubric_categories')
@@ -131,7 +170,7 @@ class EventDashboardController extends Controller
                     ->join('jury_mappings as jm', 'ris.jury_mapping_id', '=', 'jm.id')
                     ->join('rubric_items as ri', 'ris.rubric_item_id', '=', 'ri.id')
                     ->where('jm.event_id', $event->id)
-                    ->where('jm.reviewer_registration_id', $registration->id)
+                    ->where('jm.jury_registration_id', $registration->id)
                     ->where('jm.status', 'completed')
                     ->select(
                         'jm.id as mapping_id',
@@ -139,7 +178,8 @@ class EventDashboardController extends Controller
                         'ris.score',
                         'ris.comment',
                         'ri.name as rubric_item_name',
-                        'ri.max_score'
+                        'ri.max_score',
+                        'ri.rubric_category_id'
                     )
                     ->get()
                     ->groupBy('mapping_id');
@@ -223,14 +263,22 @@ class EventDashboardController extends Controller
         }
 
         // Validate input
+        $isInnovation = !empty($event->innovation_categories) || !empty($event->innovation_theme);
+        
         $rules = [
             'title' => 'required|string|max:255',
             'abstract' => 'required|string|max:2000',
-            'poster' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
             'video_url' => 'nullable|url|max:500',
-            'product_category' => 'required|string|max:255',
+            'product_category' => $isInnovation ? 'required|string|max:255' : 'nullable|string|max:255',
             'product_theme' => 'nullable|string|max:255',
         ];
+        
+        // File validation based on event type
+        if ($isInnovation) {
+            $rules['poster'] = 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240'; // Images for innovation
+        } else {
+            $rules['poster'] = 'nullable|file|mimes:doc,docx,pdf|max:10240'; // Word/PDF for conference
+        }
 
         $validated = $request->validate($rules);
 
@@ -336,8 +384,16 @@ class EventDashboardController extends Controller
      */
     public function submitReview(Request $request, Event $event, EventRegistration $registration)
     {
+        Log::info('Submit review started', [
+            'event_id' => $event->id,
+            'registration_id' => $registration->id,
+            'auth_user_id' => Auth::id(),
+            'request_data' => $request->all()
+        ]);
+
         // Verify the registration belongs to the authenticated user
         if ($registration->user_id !== Auth::id() || $registration->event_id !== $event->id) {
+            Log::warning('Unauthorized review submission attempt');
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized action.'
@@ -352,21 +408,23 @@ class EventDashboardController extends Controller
             ], 403);
         }
 
-        // Validate input
+        // Validate input with new structure
         $validated = $request->validate([
             'mapping_id' => 'required|exists:jury_mappings,id',
             'rubric_scores' => 'required|array',
-            'rubric_scores.*' => 'required|integer|min:1|max:5',
-            'rubric_comments' => 'nullable|array',
-            'rubric_comments.*' => 'nullable|string|max:1000',
-            'review_notes' => 'nullable|string|max:2000',
+            'rubric_scores.*' => 'required|integer|min:0',
+            'category_comments' => 'nullable|array',
+            'category_comments.*' => 'nullable|string|max:2000',
+            'review_notes' => 'nullable|string|max:5000',
         ]);
+
+        Log::info('Validation passed', ['validated' => $validated]);
 
         // Verify the mapping belongs to this reviewer and event
         $mapping = DB::table('jury_mappings')
             ->where('id', $validated['mapping_id'])
             ->where('event_id', $event->id)
-            ->where('reviewer_registration_id', $registration->id)
+            ->where('jury_registration_id', $registration->id)
             ->first();
 
         if (!$mapping) {
@@ -386,53 +444,214 @@ class EventDashboardController extends Controller
             ->where('user_id', $participantReg->user_id)
             ->first();
 
-        // Calculate total score
-        $totalScore = array_sum($validated['rubric_scores']);
-        
-        // Get max possible score from rubric items
-        $rubricItemIds = array_keys($validated['rubric_scores']);
-        $rubricItems = DB::table('rubric_items')
-            ->whereIn('id', $rubricItemIds)
-            ->get();
-        $maxScore = $rubricItems->sum('max_score');
-        
-        // Convert to percentage (0-100)
-        $percentageScore = $maxScore > 0 ? round(($totalScore / $maxScore) * 100) : 0;
+        Log::info('Starting review save process', [
+            'mapping_id' => $validated['mapping_id'],
+            'rubric_scores_count' => count($validated['rubric_scores']),
+            'has_paper' => !is_null($paper)
+        ]);
 
-        // Save individual rubric item scores
-        foreach ($validated['rubric_scores'] as $rubricItemId => $score) {
-            $rubricComment = $validated['rubric_comments'][$rubricItemId] ?? null;
+        // Use transaction to ensure data integrity
+        DB::beginTransaction();
+        try {
+            // Delete old scores if this mapping already has scores (update scenario)
+            DB::table('rubric_item_scores')
+                ->where('jury_mapping_id', $validated['mapping_id'])
+                ->delete();
+
+            // Loop through all rubric scores and save each one individually
+            $totalScore = 0;
+            $maxScore = 0;
             
-            DB::table('rubric_item_scores')->updateOrInsert(
-                [
-                    'jury_mapping_id' => $mapping->id,
-                    'rubric_item_id' => $rubricItemId,
-                ],
-                [
-                    'event_paper_id' => $paper ? $paper->id : null,
-                    'evaluator_id' => Auth::id(),
-                    'score' => $score,
-                    'comment' => $rubricComment,
-                    'updated_at' => now(),
-                    'created_at' => now(),
-                ]
-            );
+            foreach ($validated['rubric_scores'] as $rubricItemId => $score) {
+                $rubricItem = DB::table('rubric_items')->where('id', $rubricItemId)->first();
+                
+                if ($rubricItem) {
+                    $totalScore += $score;
+                    $maxScore += $rubricItem->max_score ?? 5;
+                    
+                    // Get category comment for this item's category
+                    $categoryComment = $validated['category_comments'][$rubricItem->rubric_category_id] ?? null;
+                    
+                    DB::table('rubric_item_scores')->insert([
+                        'jury_mapping_id' => $validated['mapping_id'],
+                        'rubric_item_id' => $rubricItemId,
+                        'event_paper_id' => $paper ? $paper->id : null,
+                        'evaluator_id' => Auth::id(),
+                        'score' => $score,
+                        'comment' => $categoryComment,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                    
+                    Log::info('Saved rubric score', [
+                        'mapping_id' => $validated['mapping_id'],
+                        'rubric_item_id' => $rubricItemId,
+                        'score' => $score
+                    ]);
+                }
+            }
+
+            // Compile all category comments into notes
+            $allComments = [];
+            if (!empty($validated['category_comments'])) {
+                foreach ($validated['category_comments'] as $categoryId => $comment) {
+                    if (!empty(trim($comment))) {
+                        $category = DB::table('rubric_categories')->where('id', $categoryId)->first();
+                        if ($category) {
+                            $allComments[] = "{$category->name}: {$comment}";
+                        }
+                    }
+                }
+            }
+            
+            // Add overall review notes if provided
+            if (!empty($validated['review_notes'])) {
+                $allComments[] = "Overall Notes: {$validated['review_notes']}";
+            }
+            
+            $notesText = !empty($allComments) ? implode("\n\n", $allComments) : 'Evaluation completed.';
+
+            // Update the jury mapping with review status
+            DB::table('jury_mappings')
+                ->where('id', $validated['mapping_id'])
+                ->update([
+                    'status' => 'completed',
+                    'notes' => $notesText,
+                    'updated_at' => now()
+                ]);
+
+            DB::commit();
+            
+            $percentageScore = $maxScore > 0 ? round(($totalScore / $maxScore) * 100) : 0;
+            
+            Log::info('Review submitted successfully', [
+                'mapping_id' => $validated['mapping_id'],
+                'total_scores_saved' => count($validated['rubric_scores']),
+                'total_score' => $totalScore,
+                'max_score' => $maxScore,
+                'percentage' => $percentageScore
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Your evaluation has been saved successfully!',
+                'scores_saved' => count($validated['rubric_scores']),
+                'total_score' => $totalScore,
+                'max_score' => $maxScore,
+                'percentage' => $percentageScore
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Failed to submit review', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'event_id' => $event->id,
+                'registration_id' => $registration->id,
+                'mapping_id' => $validated['mapping_id'] ?? null
+            ]);
+            
+            // Determine specific error message
+            $errorMessage = 'Unable to save your evaluation. Please try again.';
+            
+            if (str_contains($e->getMessage(), 'foreign key')) {
+                $errorMessage = 'Invalid rubric item detected. Please contact the administrator.';
+            } elseif (str_contains($e->getMessage(), 'duplicate')) {
+                $errorMessage = 'This evaluation has already been submitted. Please refresh the page.';
+            } elseif (str_contains($e->getMessage(), 'connection')) {
+                $errorMessage = 'Database connection error. Please check your internet connection.';
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => $errorMessage,
+                'error_details' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * Get existing review scores for editing
+     */
+    public function getReviewScores(Event $event, $mappingId)
+    {
+        // Verify the mapping exists and belongs to authenticated user
+        $mapping = DB::table('jury_mappings as jm')
+            ->join('event_registrations as er', 'jm.jury_registration_id', '=', 'er.id')
+            ->where('jm.id', $mappingId)
+            ->where('jm.event_id', $event->id)
+            ->where('er.user_id', Auth::id())
+            ->select('jm.*')
+            ->first();
+
+        if (!$mapping) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Assignment not found or unauthorized.'
+            ], 404);
         }
 
-        // Update the mapping with review
-        DB::table('jury_mappings')
-            ->where('id', $validated['mapping_id'])
-            ->update([
-                'status' => 'completed',
-                'score' => $percentageScore,
-                'review_notes' => $validated['review_notes'] ?? 'Evaluation completed based on rubric criteria.',
-                'reviewed_at' => now(),
-                'updated_at' => now()
-            ]);
+        // Get all scores for this mapping
+        $scores = DB::table('rubric_item_scores as ris')
+            ->where('jury_mapping_id', $mappingId)
+            ->select('rubric_item_id', 'score', 'comment')
+            ->get();
+
+        // Parse review notes to extract overall notes
+        $reviewNotes = '';
+        if ($mapping->notes) {
+            // Extract "Overall Notes:" part if exists
+            if (strpos($mapping->notes, 'Overall Notes:') !== false) {
+                $parts = explode('Overall Notes:', $mapping->notes, 2);
+                $reviewNotes = trim($parts[1]);
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Review submitted successfully!'
+            'scores' => $scores,
+            'review_notes' => $reviewNotes
+        ]);
+    }
+    
+    /**
+     * Get existing review for editing
+     */
+    public function getReview(Request $request, Event $event, $mappingId)
+    {
+        // Verify the mapping exists and belongs to this reviewer
+        $mapping = DB::table('jury_mappings')
+            ->where('id', $mappingId)
+            ->where('event_id', $event->id)
+            ->first();
+
+        if (!$mapping) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Assignment not found.'
+            ], 404);
+        }
+
+        // Get rubric item scores
+        $scores = DB::table('rubric_item_scores')
+            ->where('jury_mapping_id', $mappingId)
+            ->get()
+            ->pluck('score', 'rubric_item_id')
+            ->toArray();
+            
+        // Get rubric item comments
+        $comments = DB::table('rubric_item_scores')
+            ->where('jury_mapping_id', $mappingId)
+            ->whereNotNull('comment')
+            ->get()
+            ->pluck('comment', 'rubric_item_id')
+            ->toArray();
+
+        return response()->json([
+            'success' => true,
+            'scores' => $scores,
+            'comments' => $comments,
+            'review_notes' => $mapping->review_notes
         ]);
     }
     

@@ -396,28 +396,69 @@ use Illuminate\Support\Facades\Storage;
 
                 {{-- Participant Paper Form --}}
                 @php
+                    $isInnovation = stripos($event->event_type, 'innovation') !== false;
+                    $isConference = stripos($event->event_type, 'conference') !== false;
+                    
                     $categories = [];
-                    if ($event->innovation_categories && count($event->innovation_categories) > 0) {
-                        $categories = array_merge($categories, $event->innovation_categories);
+                    $themes = [];
+                    
+                    // Innovation events: show both categories and themes
+                    if ($isInnovation) {
+                        // Handle innovation_categories
+                        $innovationCategories = $event->innovation_categories;
+                        if (is_array($innovationCategories) && count($innovationCategories) > 0) {
+                            $categories = $innovationCategories;
+                        }
+                        
+                        // Handle innovation_theme
+                        $innovationTheme = $event->innovation_theme;
+                        if (is_array($innovationTheme) && count($innovationTheme) > 0) {
+                            $themes = $innovationTheme;
+                        }
                     }
-                    if ($event->conference_categories && count($event->conference_categories) > 0) {
-                        $categories = array_merge($categories, $event->conference_categories);
+                    
+                    // Conference events: show themes only (no categories)
+                    if ($isConference) {
+                        $conferenceCategories = $event->conference_categories;
+                        if (is_array($conferenceCategories) && count($conferenceCategories) > 0) {
+                            $themes = $conferenceCategories;
+                        }
                     }
                 @endphp
                 
-                @if(count($categories) > 0)
+                {{-- Innovation Events Only: Show Categories --}}
+                @if($isInnovation && count($categories) > 0)
                 <div class="form-group">
-                    <label class="required" for="paper_category">Paper Category</label>
+                    <label class="required" for="paper_category">Product Category</label>
                     <select name="paper_category" id="paper_category" class="form-control" required>
                         <option value="">Select a category</option>
                         @foreach($categories as $category)
-                            <option value="{{ $category }}" {{ old('paper_category', $paper->paper_category) == $category ? 'selected' : '' }}>
+                            <option value="{{ $category }}" {{ old('paper_category', $paper->product_category) == $category ? 'selected' : '' }}>
                                 {{ $category }}
                             </option>
                         @endforeach
                     </select>
-                    <p class="help-text">Choose the category that best fits your paper submission.</p>
+                    <p class="help-text">Choose the category that best fits your product.</p>
                     @error('paper_category')
+                        <div class="error-text">{{ $message }}</div>
+                    @enderror
+                </div>
+                @endif
+                
+                {{-- Show Themes (for both Innovation and Conference) --}}
+                @if(count($themes) > 0)
+                <div class="form-group">
+                    <label class="required" for="paper_theme">{{ $isInnovation ? 'Product' : 'Paper' }} Theme</label>
+                    <select name="paper_theme" id="paper_theme" class="form-control" required>
+                        <option value="">Select a theme</option>
+                        @foreach($themes as $theme)
+                            <option value="{{ $theme }}" {{ old('paper_theme', $paper->product_theme) == $theme ? 'selected' : '' }}>
+                                {{ $theme }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="help-text">Choose the theme that best fits your {{ $isInnovation ? 'product' : 'paper' }}.</p>
+                    @error('paper_theme')
                         <div class="error-text">{{ $message }}</div>
                     @enderror
                 </div>
@@ -474,9 +515,9 @@ use Illuminate\Support\Facades\Storage;
                     name="paper_poster" 
                     id="paper_poster"
                     class="form-control"
-                    accept=".jpg,.jpeg,.png,.pdf"
+                    accept="{{ $isInnovation ? 'image/*' : '.doc,.docx,.pdf' }}"
                 >
-                <p class="help-text">Upload your presentation poster (JPG, PNG, or PDF - Max 10MB)</p>
+                <p class="help-text">{{ $isInnovation ? 'Upload your presentation poster (JPG, PNG, or PDF - Max 10MB)' : 'Upload your paper document (DOC, DOCX, or PDF - Max 10MB)' }}</p>
                 @error('paper_poster')
                     <div class="error-text">{{ $message }}</div>
                 @enderror

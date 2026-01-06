@@ -990,24 +990,24 @@
                             </a>
                         @endif
 
-                        @if ($registration->is_participant && $registration->status === 'pending')
+                        @if ($registration->role === 'participant' && $registration->status === 'pending')
                             @php
                                 $paper = \App\Models\EventPaper::where('user_id', $registration->user_id)
                                     ->where('event_id', $registration->event_id)
                                     ->first();
                                 $isPastDeadline = false;
 
-                                // Check if past paper deadline
-                                if ($event->delivery_mode === 'face_to_face' && $event->f2f_paper_deadline) {
-                                    $isPastDeadline = now()->gt($event->f2f_paper_deadline);
-                                } elseif ($event->delivery_mode === 'online' && $event->online_paper_deadline) {
-                                    $isPastDeadline = now()->gt($event->online_paper_deadline);
+                                // Check if past paper submission deadline
+                                if ($event->delivery_mode === 'face_to_face' && $event->f2f_paper_submission_deadline) {
+                                    $isPastDeadline = now()->gt($event->f2f_paper_submission_deadline);
+                                } elseif ($event->delivery_mode === 'online' && $event->online_paper_submission_deadline) {
+                                    $isPastDeadline = now()->gt($event->online_paper_submission_deadline);
                                 } elseif ($event->delivery_mode === 'hybrid') {
-                                    $f2fPast = $event->f2f_paper_deadline
-                                        ? now()->gt($event->f2f_paper_deadline)
+                                    $f2fPast = $event->f2f_paper_submission_deadline
+                                        ? now()->gt($event->f2f_paper_submission_deadline)
                                         : false;
-                                    $onlinePast = $event->online_paper_deadline
-                                        ? now()->gt($event->online_paper_deadline)
+                                    $onlinePast = $event->online_paper_submission_deadline
+                                        ? now()->gt($event->online_paper_submission_deadline)
                                         : false;
                                     $isPastDeadline = $f2fPast && $onlinePast;
                                 }

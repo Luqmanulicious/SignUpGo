@@ -40,11 +40,11 @@
                 📧 <span>Mail box</span>
             </a>
         </li>
-        <li class="nav-item">
+        {{-- <li class="nav-item">
             <a href="#" class="nav-link">
                 ⚙️ <span>Settings</span>
             </a>
-        </li>
+        </li> --}}
         <li class="nav-item">
             <form method="POST" action="{{ route('logout') }}" id="logout-form" style="margin: 0;">
                 @csrf

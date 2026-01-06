@@ -90,11 +90,35 @@
         margin-bottom: 1rem; 
         box-shadow: 0 2px 4px rgba(0,0,0,0.06);
         transition: all 0.3s ease;
+        position: relative;
     } 
     
     .event:hover {
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         transform: translateY(-2px);
+    }
+    
+    .event.past-event {
+        opacity: 0.7;
+    }
+    
+    .event.past-event img,
+    .event.past-event > div[style*="aspect-ratio"] {
+        filter: grayscale(50%) blur(2px);
+    }
+    
+    .event.past-event::after {
+        content: '🕐 Event Ended';
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        background: rgba(0, 0, 0, 0.75);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        z-index: 10;
     }
     
     .event h3 { 
@@ -436,7 +460,10 @@
         </div>
     @else
         @foreach($events as $event)
-            <div class="event">
+            @php
+                $eventEnded = $event->end_date && \Carbon\Carbon::now()->isAfter($event->end_date);
+            @endphp
+            <div class="event {{ $eventEnded ? 'past-event' : '' }}">
                 @if($event->poster_url)
                     <img src="{{ $event->poster_url }}" alt="{{ $event->title }}" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; background: #f5f5f5;" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                     <div style="width: 100%; aspect-ratio: 16/9; background: #ecf0f1; border-radius: 8px; margin-bottom: 1rem; display: none; align-items: center; justify-content: center; color: #95a5a6; font-size: 3rem;">📅</div>
