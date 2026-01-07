@@ -59,11 +59,16 @@
         .nav-link {
             display: flex;
             align-items: center;
-            padding: 0.8rem 1rem;
+            padding: 0.8rem 0.75rem;
             color: #ecf0f1;
             text-decoration: none;
             border-radius: 8px;
             transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .nav-link span {
+            white-space: nowrap;
         }
 
         .nav-link:hover {
@@ -93,6 +98,13 @@
             margin-left: 260px;
             padding: 2rem;
             width: calc(100% - 260px);
+        }
+
+        /* Override Bootstrap container padding */
+        .main-content .container {
+            padding-left: 0;
+            padding-right: 0;
+            max-width: 100%;
         }
 
         /* Responsive Design */

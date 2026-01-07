@@ -89,14 +89,9 @@
                                     <p style="margin: 0 0 0.35rem 0; font-size: 0.9rem; opacity: 0.9;">
                                         <strong>Name:</strong> {{ $certificate->participant_name }}
                                     </p>
-                                    <p style="margin: 0 0 0.35rem 0; font-size: 0.9rem; opacity: 0.9;">
+                                    <p style="margin: 0; font-size: 0.9rem; opacity: 0.9;">
                                         <strong>Role:</strong> {{ ucfirst($certificate->registration_role ?? $certificate->participant_role) }}
                                     </p>
-                                    @if($certificate->project_name)
-                                        <p style="margin: 0; font-size: 0.9rem; opacity: 0.9;">
-                                            <strong>Project:</strong> {{ $certificate->project_name }}
-                                        </p>
-                                    @endif
                                 </div>
 
                                 {{-- Event Date & Generated Date --}}
@@ -109,15 +104,15 @@
                                     </p>
                                 </div>
 
-                                {{-- Download Button --}}
+                                {{-- Certificate Link Button --}}
                                 <a href="{{ route('certificates.download', $certificate->id) }}" target="_blank" style="display: block; width: 100%; padding: 0.75rem; background: white; color: {{ $buttonColor }}; text-decoration: none; border-radius: 8px; font-weight: 700; text-align: center; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" onmouseover="this.style.background='#f8f9fa'; this.style.transform='scale(1.02)'" onmouseout="this.style.background='white'; this.style.transform='scale(1)'">
-                                    📥 Download Certificate
+                                    🔗 Open Certificate
                                 </a>
 
                                 {{-- Downloaded Indicator --}}
                                 @if($certificate->downloaded_at)
                                     <p style="margin: 0.75rem 0 0 0; font-size: 0.75rem; opacity: 0.7; text-align: center;">
-                                        ✓ Downloaded on {{ \Carbon\Carbon::parse($certificate->downloaded_at)->format('M d, Y') }}
+                                        ✓ Opened on {{ \Carbon\Carbon::parse($certificate->downloaded_at)->format('M d, Y') }}
                                     </p>
                                 @endif
                             </div>

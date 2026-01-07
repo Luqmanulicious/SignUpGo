@@ -30,15 +30,8 @@ class PaperReview extends Model
         return $this->belongsTo(User::class, 'reviewer_id');
     }
 
-    public function scores(): HasMany
-    {
-        return $this->hasMany(PaperReviewScore::class, 'paper_review_id');
-    }
-
-    public function categoryComments(): HasMany
-    {
-        return $this->hasMany(PaperReviewCategoryComment::class, 'paper_review_id');
-    }
+    // Note: Reviews now use rubric_item_scores table through jury_mappings
+    // instead of paper_review_scores and paper_review_category_comments
 
     public function isSelected(): bool
     {
