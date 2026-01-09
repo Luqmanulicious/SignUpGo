@@ -35,6 +35,18 @@ class EventDashboardController extends Controller
             return redirect()->route('registrations.index')
                 ->with('info', 'Your registration is still pending approval.');
         }
+        
+        // Check if registration is rejected or cancelled
+        if (in_array($registration->status, ['rejected', 'cancelled'])) {
+            return redirect()->route('registrations.index')
+                ->with('error', 'Your registration has been rejected. You cannot access the event dashboard.');
+        }
+        
+        // Check if presentation/paper is rejected (for conference participants)
+        if ($registration->presentation_status === 'rejected') {
+            return redirect()->route('registrations.index')
+                ->with('error', 'Your paper/presentation was not selected. You cannot access the event dashboard.');
+        }
 
         // Route to appropriate dashboard based on role
         $role = $registration->role;

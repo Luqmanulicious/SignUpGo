@@ -12,9 +12,21 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: url('https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1920&q=80') no-repeat center center/cover;
             font-family: 'Poppins', sans-serif;
             padding: 2rem 0;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1920&q=80') no-repeat center center/cover;
+            filter: blur(8px);
+            z-index: -1;
         }
 
         .glass-card {
@@ -43,6 +55,7 @@
         h1 {
             margin-bottom: 1.5rem;
             font-size: 1.8rem;
+            color: black;
         }
 
         .form-group {
@@ -55,6 +68,7 @@
             display: block;
             margin-bottom: 0.5rem;
             font-size: 0.9rem;
+            color: black;
         }
 
         .form-group input {
@@ -156,7 +170,7 @@
             position: relative;
             cursor: pointer;
             font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.9);
+            color: black;
             display: flex;
             align-items: center;
             user-select: none;
@@ -227,10 +241,11 @@
         .links {
             font-size: 0.9rem;
             margin-top: 1rem;
+            color: black;
         }
 
         .links a {
-            color: #48ff00;
+            color: black;
             text-decoration: none;
             font-weight: 600;
         }
@@ -257,11 +272,12 @@
             font-size: 1.1rem;
             margin-bottom: 0.5rem;
             font-weight: 600;
+            color: black;
         }
 
         .optional-subtitle {
             font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.8);
+            color: black;
             margin-bottom: 1.5rem;
         }
 
@@ -313,8 +329,13 @@
             display: block;
             margin-top: 0.5rem;
             font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.9);
+            color: black;
             text-align: center;
+        }
+
+        .required {
+            color: red;
+            margin-left: 2px;
         }
     </style>
 </head>
@@ -333,17 +354,17 @@
         <form method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
             @csrf
             <div class="form-group">
-                <label for="name">Full Name</label>
+                <label for="name">Full Name<span class="required">*</span></label>
                 <input type="text" id="name" name="name" value="{{ old('name') }}" required autofocus>
             </div>
 
             <div class="form-group">
-                <label for="email">Email Address</label>
+                <label for="email">Email Address<span class="required">*</span></label>
                 <input type="email" id="email" name="email" value="{{ old('email') }}" required>
             </div>
 
             <div class="form-group">
-                <label for="password">Password</label>
+                <label for="password">Password<span class="required">*</span></label>
                 <input type="password" id="password" name="password" required>
                 <button type="button" class="toggle-password" id="togglePassword" onclick="togglePasswordFields()" aria-label="Toggle password visibility">
                     <span class="eye-icon">
@@ -357,7 +378,7 @@
             </div>
 
             <div class="form-group">
-                <label for="password_confirmation">Confirm Password</label>
+                <label for="password_confirmation">Confirm Password<span class="required">*</span></label>
                 <input type="password" id="password_confirmation" name="password_confirmation" required>
                 <button type="button" class="toggle-password" id="togglePasswordConfirm" onclick="togglePasswordFields()" aria-label="Toggle password visibility">
                     <span class="eye-icon">

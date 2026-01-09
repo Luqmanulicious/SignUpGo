@@ -12,8 +12,20 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: url('https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1920&q=80') no-repeat center center/cover;
             font-family: 'Poppins', sans-serif;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1920&q=80') no-repeat center center/cover;
+            filter: blur(8px);
+            z-index: -1;
         }
 
         .glass-card {
@@ -40,6 +52,7 @@
         h1 {
             margin-bottom: 1.5rem;
             font-size: 1.8rem;
+            color: black;
         }
 
         .form-group {
@@ -52,6 +65,7 @@
             display: block;
             margin-bottom: 0.5rem;
             font-size: 0.9rem;
+            color: black;
         }
 
         .form-group input {
@@ -162,10 +176,11 @@
         .links {
             font-size: 0.9rem;
             margin-top: 1rem;
+            color: black;
         }
 
         .links a {
-            color: #00b0ff;
+            color: black;
             text-decoration: none;
             font-weight: 600;
         }
@@ -180,6 +195,11 @@
             padding: 0.5rem;
             border-radius: 5px;
             margin-bottom: 1rem;
+        }
+
+        .required {
+            color: red;
+            margin-left: 2px;
         }
     </style>
 </head>
@@ -198,12 +218,12 @@
         <form method="POST" action="{{ route('login') }}">
             @csrf
             <div class="form-group">
-                <label for="email">Email Address</label>
+                <label for="email">Email Address<span class="required">*</span></label>
                 <input type="email" id="email" name="email" value="{{ old('email') }}" required autofocus>
             </div>
 
             <div class="form-group">
-                <label for="password">Password</label>
+                <label for="password">Password<span class="required">*</span></label>
                 <input type="password" id="password" name="password" required>
                 <button type="button" class="toggle-password" onclick="togglePassword()" aria-label="Toggle password visibility">
                     <span class="eye-icon">

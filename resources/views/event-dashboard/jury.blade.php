@@ -387,6 +387,10 @@
 
             <h3 style="margin: 0 0 1.5rem 0; color: #2c3e50; font-size: 1.3rem; text-align: center;">Attendance</h3>
 
+            @php
+                $hasFeedback = \App\Models\Feedback::where('event_registration_id', $registration->id)->exists();
+            @endphp
+
             @if ($registration->checked_in_at)
                 <div style="background: #e8f5e9; padding: 1.5rem; border-radius: 8px; text-align: center;">
                     <p style="margin: 0; color: #2e7d32; font-weight: 600; font-size: 1.1rem;">✓ Checked In</p>
@@ -394,11 +398,28 @@
                         {{ $registration->checked_in_at->format('M d, Y h:i A') }}</p>
 
                     @if ($eventEnded)
-                        <a href="{{ route('feedback.create', $registration) }}"
-                            style="display: inline-block; margin-top: 1rem; padding: 0.75rem 1.5rem; background: #27ae60; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.3s;"
-                            onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27ae60'">
-                            💬 Submit Event Feedback
-                        </a>
+                        @if($hasFeedback)
+                            <div style="background: #d4edda; padding: 1rem; border-radius: 8px; margin-top: 1rem; border-left: 4px solid #28a745;">
+                                <p style="margin: 0 0 0.5rem 0; color: #155724; font-weight: 600;">✓ Feedback Submitted</p>
+                                <a href="{{ route('feedback.show', $registration) }}"
+                                    style="display: inline-block; padding: 0.75rem 1.5rem; background: #28a745; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.3s;"
+                                    onmouseover="this.style.background='#218838'"
+                                    onmouseout="this.style.background='#28a745'">
+                                    📋 View Your Feedback
+                                </a>
+                            </div>
+                        @else
+                            <div style="background: #e8d9f7; padding: 1rem; border-radius: 8px; margin-top: 1rem; border-left: 4px solid #9b59b6;">
+                                <p style="margin: 0 0 0.5rem 0; color: #6c3483; font-weight: 600;">Share Your Experience</p>
+                                <p style="margin: 0 0 1rem 0; color: #7d3c98; font-size: 0.9rem;">Help us improve by providing feedback</p>
+                                <a href="{{ route('feedback.create', $registration) }}"
+                                    style="display: inline-block; padding: 0.75rem 1.5rem; background: #9b59b6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.3s;"
+                                    onmouseover="this.style.background='#8e44ad'"
+                                    onmouseout="this.style.background='#9b59b6'">
+                                    💬 Submit Event Feedback
+                                </a>
+                            </div>
+                        @endif
                     @endif
                 </div>
             @elseif(!$eventStarted)

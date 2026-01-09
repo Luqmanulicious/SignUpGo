@@ -11,8 +11,20 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background: url('https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1920&q=80') no-repeat center center/cover;
       font-family: 'Poppins', sans-serif;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1920&q=80') no-repeat center center/cover;
+      filter: blur(8px);
+      z-index: -1;
     }
 
     .glass-card {
@@ -95,7 +107,7 @@
     <img src="{{ asset('images/Logo.jpg') }}" alt="SignUpGo Logo" class="logo">
 
     <h1>SignUpGo</h1>
-    <p>Effortless event registration and management — designed for conferences that matter.</p>
+    <p>Effortless registration and smart evaluation — designed for conferences and innovation events.</p>
     
     <div class="button-container">
       <a href="{{ url('/login') }}" class="btn-primary">Login Account</a>

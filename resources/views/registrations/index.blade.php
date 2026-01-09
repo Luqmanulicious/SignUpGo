@@ -1029,26 +1029,29 @@
                         @if (in_array($registration->status, ['approved', 'confirmed']))
                             @php
                                 // Access logic:
-                                // - Jury/Reviewer: Can access after EO approves their application
+                                // - Jury/Reviewer: Can access after EO approves their application (not rejected)
                                 // - Conference Participants: Can access only if presentation_status = 'selected' (after reviewer evaluation)
                                 // - Innovation Participants: Can access when status = 'confirmed' (after EO approval, to make payment and see presentation details)
 
                                 $isConferenceEvent = stripos($event->event_type, 'conference') !== false;
                                 $isInnovationEvent = stripos($event->event_type, 'innovation') !== false;
+                                
+                                // Check if registration or presentation is rejected
+                                $isRegistrationRejected = in_array($registration->status, ['rejected', 'cancelled']);
 
                                 if (in_array($registration->role, ['jury', 'reviewer'])) {
-                                    // Jury and Reviewers can access after approval
-                                    $canAccessDashboard = true;
+                                    // Jury and Reviewers can access after approval, but not if rejected
+                                    $canAccessDashboard = !$isRegistrationRejected;
                                 } elseif ($isParticipant) {
                                     if ($isConferenceEvent) {
-                                        // Conference participants: only selected ones can access
-                                        $canAccessDashboard = $registration->presentation_status === 'selected';
+                                        // Conference participants: only selected ones can access (not rejected)
+                                        $canAccessDashboard = $registration->presentation_status === 'selected' && !$isRegistrationRejected;
                                     } elseif ($isInnovationEvent) {
-                                        // Innovation participants: can access when confirmed (to make payment and see presentation details)
-                                        $canAccessDashboard = $registration->status === 'confirmed';
+                                        // Innovation participants: can access when confirmed and not rejected
+                                        $canAccessDashboard = $registration->status === 'confirmed' && !$isRegistrationRejected;
                                     } else {
-                                        // Other event types: default to confirmed status
-                                        $canAccessDashboard = $registration->status === 'confirmed';
+                                        // Other event types: default to confirmed status and not rejected
+                                        $canAccessDashboard = $registration->status === 'confirmed' && !$isRegistrationRejected;
                                     }
                                 } else {
                                     // Fallback for any other roles
@@ -1096,19 +1099,27 @@
                             $eventEnded = $event->end_date && now()->gt($event->end_date);
                             
                             // Check if certificate has been generated for this user and event
-                            $hasCertificate = \DB::table('generated_certificates')
+                            // BUT exclude rejected registrations or rejected presentations
+                            $isRejected = $registration->status === 'rejected' || 
+                                          $registration->status === 'cancelled' || 
+                                          $registration->presentation_status === 'rejected';
+                            
+                            $hasCertificate = !$isRejected && \DB::table('generated_certificates')
                                 ->where('user_id', $registration->user_id)
                                 ->where('event_id', $registration->event_id)
                                 ->exists();
+                            
+                            // Check if user can submit feedback (event ended and registration not rejected)
+                            $canSubmitFeedback = $eventEnded && !$isRejected && in_array($registration->status, ['approved', 'confirmed']);
                         @endphp
-                        @if ($registration->checked_in_at && $eventEnded)
+                        @if ($canSubmitFeedback)
                             <a href="{{ route('feedback.create', $registration) }}" class="btn btn-primary"
                                 style="background: #92318d;">
                                 💬 Event Feedback
                             </a>
                         @endif
 
-                        @if ($hasCertificate)
+                        @if ($hasCertificate && !$isRejected)
                             <a href="{{ route('certificates.index') }}" class="btn btn-primary"
                                 style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); border: none;">
                                 🎓 View Certificate

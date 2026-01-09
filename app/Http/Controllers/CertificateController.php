@@ -13,11 +13,17 @@ class CertificateController extends Controller
         $user = Auth::user();
         
         // Fetch all certificates for the authenticated user with event details and certificate info
+        // Exclude rejected registrations and rejected presentations
         $certificates = DB::table('event_registrations')
             ->join('events', 'event_registrations.event_id', '=', 'events.id')
             ->join('users', 'event_registrations.user_id', '=', 'users.id')
             ->leftJoin('event_categories', 'events.category_id', '=', 'event_categories.id')
             ->where('event_registrations.user_id', $user->id)
+            ->whereNotIn('event_registrations.status', ['rejected', 'cancelled'])
+            ->where(function($query) {
+                $query->whereNull('event_registrations.presentation_status')
+                      ->orWhere('event_registrations.presentation_status', '!=', 'rejected');
+            })
             ->whereNotNull('event_registrations.certificate_path')
             ->whereNotNull('event_registrations.certificate_filename')
             ->select(
@@ -43,9 +49,15 @@ class CertificateController extends Controller
         $user = Auth::user();
         
         // Fetch the certificate and verify ownership
+        // Exclude rejected registrations and rejected presentations
         $registration = DB::table('event_registrations')
             ->where('id', $id)
             ->where('user_id', $user->id)
+            ->whereNotIn('status', ['rejected', 'cancelled'])
+            ->where(function($query) {
+                $query->whereNull('presentation_status')
+                      ->orWhere('presentation_status', '!=', 'rejected');
+            })
             ->whereNotNull('certificate_path')
             ->whereNotNull('certificate_filename')
             ->first();

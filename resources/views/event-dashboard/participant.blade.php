@@ -262,10 +262,13 @@
                         {{ $isInnovation ? '🎨 Product Submission' : '📄 Paper Submission' }}
                     </h3>
                     @php
-                        // Check if before submission deadline
-                        $canEdit = true;
-                        if ($event->end_date) {
+                        // Only innovation participants can edit submissions before deadline
+                        // Conference participants cannot edit in participant dashboard
+                        $canEdit = false;
+                        if ($isInnovation && $event->end_date) {
                             $canEdit = now()->lte($event->end_date);
+                        } elseif ($isInnovation) {
+                            $canEdit = true;
                         }
                     @endphp
                 </div>
@@ -701,6 +704,106 @@
                     @endif
                 </div>
 
+                {{-- Awards Section - Display participant awards --}}
+                @php
+                    // Check if participant has received any awards
+                    $participantAwards = collect();
+                    $showAwardSection = false;
+                    
+                    // Check if the tables exist before querying
+                    if (\Illuminate\Support\Facades\Schema::hasTable('participant_awards') && 
+                        \Illuminate\Support\Facades\Schema::hasTable('event_awards')) {
+                        $participantAwards = \DB::table('participant_awards as pa')
+                            ->join('event_awards as ea', 'pa.event_award_id', '=', 'ea.id')
+                            ->where('pa.registration_id', $registration->id)
+                            ->where('pa.event_id', $event->id)
+                            ->select(
+                                'ea.id as award_id',
+                                'ea.name as award_name',
+                                'ea.display_name',
+                                'ea.award_type',
+                                'ea.description',
+                                'ea.color',
+                                'pa.rank',
+                                'pa.final_score',
+                                'pa.created_at as awarded_at'
+                            )
+                            ->orderBy('pa.created_at', 'desc')
+                            ->get();
+                    }
+                    
+                    $showAwardSection = $participantAwards->count() > 0;
+                @endphp
+
+                @if($showAwardSection)
+                    <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 1.5rem 0; color: #2c3e50; font-size: 1.1rem; text-align: center;">🏆 Awards</h3>
+                        
+                        @foreach($participantAwards as $award)
+                            @php
+                                // Determine background color based on award type or custom color
+                                $bgColor = '#d4af37'; // Default gold
+                                $shadowColor = 'rgba(212, 175, 55, 0.3)';
+                                
+                                // Use custom color if provided
+                                if (!empty($award->color)) {
+                                    $bgColor = 'linear-gradient(135deg, ' . $award->color . ' 0%, ' . $award->color . 'cc 100%)';
+                                    $shadowColor = $award->color . '4d';
+                                } elseif(str_contains(strtolower($award->award_type ?? ''), 'silver') || str_contains(strtolower($award->award_name ?? ''), 'silver')) {
+                                    $bgColor = 'linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%)';
+                                    $shadowColor = 'rgba(192, 192, 192, 0.3)';
+                                } elseif(str_contains(strtolower($award->award_type ?? ''), 'gold') || str_contains(strtolower($award->award_name ?? ''), 'gold')) {
+                                    $bgColor = 'linear-gradient(135deg, #ffd700 0%, #d4af37 100%)';
+                                    $shadowColor = 'rgba(255, 215, 0, 0.3)';
+                                } elseif(str_contains(strtolower($award->award_type ?? ''), 'bronze') || str_contains(strtolower($award->award_name ?? ''), 'bronze')) {
+                                    $bgColor = 'linear-gradient(135deg, #cd7f32 0%, #b5651d 100%)';
+                                    $shadowColor = 'rgba(205, 127, 50, 0.3)';
+                                }
+                                
+                                // Display name or fallback to name
+                                $displayName = $award->display_name ?? $award->award_name;
+                            @endphp
+                            
+                            <div style="background: {{ $bgColor }}; padding: 1.5rem; border-radius: 8px; text-align: center; margin-bottom: 1rem; box-shadow: 0 4px 12px {{ $shadowColor }};">
+                                <div style="font-size: 3rem; margin-bottom: 0.5rem;">
+                                    @if(str_contains(strtolower($award->award_type ?? ''), 'gold') || str_contains(strtolower($award->award_name), 'gold'))
+                                        🥇
+                                    @elseif(str_contains(strtolower($award->award_type ?? ''), 'silver') || str_contains(strtolower($award->award_name), 'silver'))
+                                        🥈
+                                    @elseif(str_contains(strtolower($award->award_type ?? ''), 'bronze') || str_contains(strtolower($award->award_name), 'bronze'))
+                                        🥉
+                                    @elseif(str_contains(strtolower($award->award_type ?? ''), 'excellence') || str_contains(strtolower($award->award_name), 'excellence'))
+                                        ⭐
+                                    @else
+                                        🏆
+                                    @endif
+                                </div>
+                                <h4 style="margin: 0 0 0.5rem 0; color: #1a1a1a; font-size: 1.1rem; font-weight: 700; text-shadow: 0 1px 2px rgba(255,255,255,0.3);">
+                                    {{ $displayName }}
+                                </h4>
+                                @if($award->award_type)
+                                    <p style="margin: 0 0 0.5rem 0; color: #2c2c2c; font-size: 0.85rem; font-weight: 600;">
+                                        {{ ucfirst($award->award_type) }}
+                                    </p>
+                                @endif
+                                @if($award->description)
+                                    <p style="margin: 0 0 0.5rem 0; color: #2c2c2c; font-size: 0.85rem;">
+                                        {{ $award->description }}
+                                    </p>
+                                @endif
+                                {{-- @if($award->final_score)
+                                    <p style="margin: 0 0 0.5rem 0; color: #1a1a1a; font-size: 0.9rem; font-weight: 600;">
+                                        Score: {{ number_format($award->final_score, 2) }}
+                                    </p>
+                                @endif --}}
+                                <p style="margin: 0.5rem 0 0 0; color: #1a1a1a; font-size: 0.8rem;">
+                                    Awarded on: {{ \Carbon\Carbon::parse($award->awarded_at)->format('M d, Y') }}
+                                </p>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
                 <!-- Attendance Section - Only for Conference Events -->
                 @php
                     // Determine if Conference event based on populated fields
@@ -737,6 +840,10 @@
                         <h3 style="margin: 0 0 1.5rem 0; color: #2c3e50; font-size: 1.3rem; text-align: center;">Attendance
                         </h3>
 
+                        @php
+                            $hasFeedback = \App\Models\Feedback::where('event_registration_id', $registration->id)->exists();
+                        @endphp
+
                         @if ($registration->checked_in_at)
                             <div style="background: #c8e6c9; padding: 1.5rem; border-radius: 8px; text-align: center;">
                                 <p style="margin: 0; color: #1b5e20; font-weight: 600; font-size: 1.1rem;">✓ Checked In</p>
@@ -744,12 +851,28 @@
                                     {{ $registration->checked_in_at->format('M d, Y h:i A') }}</p>
 
                                 @if ($eventEnded)
-                                    <a href="{{ route('feedback.create', $registration) }}"
-                                        style="display: inline-block; margin-top: 1rem; padding: 0.75rem 1.5rem; background: #27ae60; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.3s;"
-                                        onmouseover="this.style.background='#229954'"
-                                        onmouseout="this.style.background='#27ae60'">
-                                        💬 Submit Event Feedback
-                                    </a>
+                                    @if($hasFeedback)
+                                        <div style="background: #d4edda; padding: 1rem; border-radius: 8px; margin-top: 1rem; border-left: 4px solid #28a745;">
+                                            <p style="margin: 0 0 0.5rem 0; color: #155724; font-weight: 600;">✓ Feedback Submitted</p>
+                                            <a href="{{ route('feedback.show', $registration) }}"
+                                                style="display: inline-block; padding: 0.75rem 1.5rem; background: #28a745; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.3s;"
+                                                onmouseover="this.style.background='#218838'"
+                                                onmouseout="this.style.background='#28a745'">
+                                                📋 View Your Feedback
+                                            </a>
+                                        </div>
+                                    @else
+                                        <div style="background: #e8d9f7; padding: 1rem; border-radius: 8px; margin-top: 1rem; border-left: 4px solid #9b59b6;">
+                                            <p style="margin: 0 0 0.5rem 0; color: #6c3483; font-weight: 600;">Share Your Experience</p>
+                                            <p style="margin: 0 0 1rem 0; color: #7d3c98; font-size: 0.9rem;">Help us improve by providing feedback</p>
+                                            <a href="{{ route('feedback.create', $registration) }}"
+                                                style="display: inline-block; padding: 0.75rem 1.5rem; background: #9b59b6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.3s;"
+                                                onmouseover="this.style.background='#8e44ad'"
+                                                onmouseout="this.style.background='#9b59b6'">
+                                                💬 Submit Event Feedback
+                                            </a>
+                                        </div>
+                                    @endif
                                 @endif
                             </div>
                         @elseif(!$eventStarted)
@@ -811,23 +934,43 @@
 
                 <!-- Feedback Section - For Innovation Participants -->
                 @if (!$isConference && $eventEnded && $paymentApproved)
+                    @php
+                        $hasFeedback = \App\Models\Feedback::where('event_registration_id', $registration->id)->exists();
+                    @endphp
+                    
                     <div
                         style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                         <h3 style="margin: 0 0 1.5rem 0; color: #2c3e50; font-size: 1.3rem; text-align: center;">Event Feedback</h3>
                         
-                        <div style="background: #e8f5e9; padding: 1.5rem; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">💬</div>
-                            <p style="margin: 0 0 0.5rem 0; color: #2e7d32; font-weight: 600;">Share Your Experience</p>
-                            <p style="margin: 0 0 1.5rem 0; color: #558b2f; font-size: 0.85rem;">
-                                The event has ended. We'd love to hear your feedback!
-                            </p>
-                            <a href="{{ route('feedback.create', $registration) }}"
-                                style="display: inline-block; padding: 0.75rem 1.5rem; background: #27ae60; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.3s;"
-                                onmouseover="this.style.background='#229954'"
-                                onmouseout="this.style.background='#27ae60'">
-                                💬 Submit Event Feedback
-                            </a>
-                        </div>
+                        @if($hasFeedback)
+                            <div style="background: #d4edda; padding: 1.5rem; border-radius: 8px; text-align: center; border-left: 4px solid #28a745;">
+                                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">✓</div>
+                                <p style="margin: 0 0 0.5rem 0; color: #155724; font-weight: 600;">Feedback Submitted</p>
+                                <p style="margin: 0 0 1.5rem 0; color: #1e7e34; font-size: 0.85rem;">
+                                    Thank you for sharing your experience!
+                                </p>
+                                <a href="{{ route('feedback.show', $registration) }}"
+                                    style="display: inline-block; padding: 0.75rem 1.5rem; background: #28a745; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.3s;"
+                                    onmouseover="this.style.background='#218838'"
+                                    onmouseout="this.style.background='#28a745'">
+                                    📋 View Your Feedback
+                                </a>
+                            </div>
+                        @else
+                            <div style="background: #e8d9f7; padding: 1.5rem; border-radius: 8px; text-align: center; border-left: 4px solid #9b59b6;">
+                                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">💬</div>
+                                <p style="margin: 0 0 0.5rem 0; color: #6c3483; font-weight: 600;">Share Your Experience</p>
+                                <p style="margin: 0 0 1.5rem 0; color: #7d3c98; font-size: 0.85rem;">
+                                    The event has ended. We'd love to hear your feedback!
+                                </p>
+                                <a href="{{ route('feedback.create', $registration) }}"
+                                    style="display: inline-block; padding: 0.75rem 1.5rem; background: #9b59b6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.3s;"
+                                    onmouseover="this.style.background='#8e44ad'"
+                                    onmouseout="this.style.background='#9b59b6'">
+                                    💬 Submit Event Feedback
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 @endif
             </div>
