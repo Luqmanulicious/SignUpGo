@@ -420,6 +420,15 @@ class EventDashboardController extends Controller
             ], 403);
         }
 
+        // Check if evaluations have been finalized/submitted
+        if (!is_null($registration->evaluations_submitted_at)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your evaluations have been finalized and can no longer be edited. Submitted on ' . 
+                             \Carbon\Carbon::parse($registration->evaluations_submitted_at)->format('M d, Y h:i A')
+            ], 403);
+        }
+
         // Validate input with new structure
         $validated = $request->validate([
             'mapping_id' => 'required|exists:jury_mappings,id',
@@ -712,6 +721,14 @@ class EventDashboardController extends Controller
         // Get rubric items grouped by category and load existing scores
         $existingScores = [];
         $categoryComments = [];
+        $overallComments = '';
+        
+        // Extract overall comments from notes if they exist
+        if ($juryMapping->notes) {
+            if (preg_match('/Overall Comments: (.+?)(?=\n\n|$)/s', $juryMapping->notes, $matches)) {
+                $overallComments = trim($matches[1]);
+            }
+        }
         
         foreach ($rubricCategories as $category) {
             $category->items = DB::table('rubric_items')
@@ -744,7 +761,8 @@ class EventDashboardController extends Controller
             'rubricCategories',
             'juryRegistration',
             'existingScores',
-            'categoryComments'
+            'categoryComments',
+            'overallComments'
         ))->with('registration', $juryRegistration);
     }
     
@@ -776,15 +794,29 @@ class EventDashboardController extends Controller
             return redirect()->back()->with('error', 'The evaluation deadline has passed.');
         }
         
-        // Validate the request
+        // Validate the request - basic validation first
         $validated = $request->validate([
             'scores' => 'required|array',
-            'scores.*' => 'required|integer|min:0|max:5',
+            'scores.*' => 'required|integer|min:0',
             'comments' => 'array',
             'comments.*' => 'nullable|string',
             'category_comments' => 'array',
             'category_comments.*' => 'nullable|string',
+            'overall_comments' => 'nullable|string',
         ]);
+        
+        // Custom validation: check each score against its rubric item's max_score
+        foreach ($validated['scores'] as $rubricItemId => $score) {
+            $rubricItem = DB::table('rubric_items')->where('id', $rubricItemId)->first();
+            if ($rubricItem) {
+                $maxScore = $rubricItem->max_score ?? 5;
+                if ($score > $maxScore) {
+                    return redirect()->back()
+                        ->with('error', "Score for '{$rubricItem->name}' cannot exceed {$maxScore}.")
+                        ->withInput();
+                }
+            }
+        }
         
         try {
             DB::beginTransaction();
@@ -865,6 +897,12 @@ class EventDashboardController extends Controller
                     }
                 }
             }
+            
+            // Add overall comments if provided
+            if (!empty($validated['overall_comments'])) {
+                $allComments[] = "Overall Comments: {$validated['overall_comments']}";
+            }
+            
             $notesText = !empty($allComments) ? implode("\n\n", $allComments) : 'Evaluation completed.';
             
             // Update jury mapping status
@@ -972,7 +1010,7 @@ class EventDashboardController extends Controller
                 'type' => 'eo_notification',
                 'priority' => 'normal',
                 'event_id' => $event->id,
-                'is_read' => false,
+                'is_read' => DB::raw('false'),
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
@@ -983,9 +1021,99 @@ class EventDashboardController extends Controller
             ]);
             
         } catch (\Exception $e) {
+            \Log::error('Failed to submit jury evaluations: ' . $e->getMessage(), [
+                'registration_id' => $registration->id,
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to submit evaluations: ' . $e->getMessage()
+                'message' => 'We encountered an issue while submitting your evaluations. Please try again in a moment. If the problem persists, please contact support.'
             ], 500);
         }
-    }}
+    }
+
+    public function submitAllReviewerEvaluations(Request $request, EventRegistration $registration)
+    {
+        try {
+            // Verify the registration belongs to the authenticated user
+            if ($registration->user_id !== Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access.'
+                ], 403);
+            }
+            
+            // Verify the registration is for a reviewer role
+            if ($registration->role !== 'reviewer') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This registration is not for a reviewer role.'
+                ], 403);
+            }
+
+            // Get all assigned mappings for this reviewer
+            $assignedMappings = DB::table('jury_mappings')
+                ->where('jury_registration_id', $registration->id)
+                ->where('event_id', $registration->event_id)
+                ->get();
+            
+            $totalAssigned = $assignedMappings->count();
+            
+            // Count completed evaluations (status = 'completed')
+            $evaluationsCompleted = DB::table('jury_mappings')
+                ->where('jury_registration_id', $registration->id)
+                ->where('event_id', $registration->event_id)
+                ->where('status', 'completed')
+                ->count();
+            
+            // Check if all evaluations are complete
+            if ($evaluationsCompleted < $totalAssigned) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Please complete all evaluations before submitting. {$evaluationsCompleted}/{$totalAssigned} completed."
+                ], 400);
+            }
+
+            // Update registration to mark evaluations as submitted
+            DB::table('event_registrations')
+                ->where('id', $registration->id)
+                ->update([
+                    'evaluations_submitted_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+            // Create notification for event organizer
+            $event = Event::find($registration->event_id);
+            DB::table('user_notifications')->insert([
+                'user_id' => $event->organizer_id ?? 1,
+                'title' => 'Reviewer Evaluations Submitted',
+                'message' => "Reviewer {$registration->user->name} has submitted all evaluations for {$event->title}.",
+                'type' => 'eo_notification',
+                'priority' => 'normal',
+                'event_id' => $event->id,
+                'is_read' => DB::raw('false'),
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'All evaluations have been successfully submitted! The event organizer has been notified.'
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to submit reviewer evaluations: ' . $e->getMessage(), [
+                'registration_id' => $registration->id,
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'We encountered an issue while submitting your evaluations. Please try again in a moment. If the problem persists, please contact support.'
+            ], 500);
+        }
+    }
+}

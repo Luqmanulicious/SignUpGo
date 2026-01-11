@@ -12,6 +12,157 @@ use Illuminate\Support\Facades\Storage;
         max-width: 800px;
         width: 100%;
     }
+
+    /* Profile Section */
+    .profile-section {
+        position: fixed !important;
+        top: 1rem !important;
+        right: 1rem !important;
+        left: auto !important;
+        z-index: 10000 !important;
+    }
+
+    .profile-button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 50px;
+        padding: 0.4rem 0.8rem 0.4rem 0.4rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        max-width: 200px;
+    }
+
+    .profile-button:hover {
+        border-color: #3498db;
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .profile-avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .profile-info {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .profile-name {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 0.85rem;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 140px;
+    }
+
+    .profile-email {
+        font-size: 0.7rem;
+        color: #7f8c8d;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 140px;
+    }
+
+    .profile-dropdown {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        min-width: 220px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+    }
+
+    .profile-section.active .profile-dropdown {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .profile-dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        color: #2c3e50;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .profile-dropdown-item:first-child {
+        border-radius: 12px 12px 0 0;
+    }
+
+    .profile-dropdown-item:last-child {
+        border-bottom: none;
+        border-radius: 0 0 12px 12px;
+    }
+
+    .profile-dropdown-item:hover {
+        background: #f8f9fa;
+        padding-left: 1.25rem;
+    }
+
+    .profile-dropdown-item.logout {
+        color: #e74c3c;
+    }
+
+    .profile-dropdown-item.logout:hover {
+        background: #fee;
+    }
+
+    .profile-dropdown-icon {
+        font-size: 1.1rem;
+    }
+
+    @media (max-width: 768px) {
+        .profile-section {
+            top: 0.5rem;
+            right: 0.5rem;
+        }
+
+        .profile-info {
+            display: none;
+        }
+
+        .profile-button {
+            padding: 0.5rem;
+        }
+    }
     
     .card { 
         background: white; 
@@ -203,6 +354,66 @@ use Illuminate\Support\Facades\Storage;
 @endsection
 
 @section('content')
+    <!-- Profile Section -->
+    @auth
+    <div class="profile-section" id="profileSection">
+        <div class="profile-button" onclick="toggleProfile()">
+            <div class="profile-avatar">
+                @if(Auth::user()->profile_picture)
+                    <img src="{{ Auth::user()->profile_picture }}" alt="{{ Auth::user()->name }}">
+                @else
+                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                @endif
+            </div>
+            <div class="profile-info">
+                <div class="profile-name">{{ Auth::user()->name }}</div>
+                <div class="profile-email">{{ Auth::user()->email }}</div>
+            </div>
+        </div>
+
+        <div class="profile-dropdown">
+            <a href="{{ route('dashboard') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">🏠</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ route('account.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">👤</span>
+                <span>My Account</span>
+            </a>
+            <a href="{{ route('registrations.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">📝</span>
+                <span>My Registrations</span>
+            </a>
+            <a href="{{ route('events.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">🎫</span>
+                <span>Browse Events</span>
+            </a>
+            <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
+                @csrf
+                <button type="submit" class="profile-dropdown-item logout" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: 1rem; font-family: inherit;">
+                    <span class="profile-dropdown-icon">🚪</span>
+                    <span>Logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleProfile() {
+            const profileSection = document.getElementById('profileSection');
+            profileSection.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const profileSection = document.getElementById('profileSection');
+            if (!profileSection.contains(event.target)) {
+                profileSection.classList.remove('active');
+            }
+        });
+    </script>
+    @endauth
+
 <div class="container">
     <div style="margin-bottom: 1.5rem;">
         <a href="{{ route('registrations.index') }}" style="display: inline-flex; align-items: center; padding: 0.75rem 1.5rem; background: #6c7778; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s ease;">
@@ -254,6 +465,47 @@ use Illuminate\Support\Facades\Storage;
                 </ul>
             </div>
         @endif
+
+        {{-- Display Registration Details (Read-only) --}}
+        @php
+            $attendanceMode = $registration->attendance_mode ?? 'face_to_face';
+            $attendanceModeLabel = '';
+            $eventStartDate = '';
+            
+            if ($attendanceMode === 'face_to_face') {
+                $attendanceModeLabel = '📍 Face-to-Face';
+                $eventStartDate = $event->f2f_start_date ?? $event->start_date;
+            } elseif ($attendanceMode === 'online') {
+                $attendanceModeLabel = '💻 Online';
+                $eventStartDate = $event->online_start_date ?? $event->start_date;
+            }
+            
+            if ($eventStartDate) {
+                try {
+                    $eventStartDate = \Carbon\Carbon::parse($eventStartDate)->format('l, F d, Y');
+                } catch (\Exception $e) {
+                    $eventStartDate = 'TBA';
+                }
+            } else {
+                $eventStartDate = 'TBA';
+            }
+        @endphp
+        
+        <div style="background: #f0f7ff; padding: 1.25rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 4px solid #2196f3;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div>
+                    <p style="margin: 0 0 0.25rem 0; font-size: 0.85rem; color: #5f6368; font-weight: 500;">ATTENDANCE MODE</p>
+                    <p style="margin: 0; font-size: 1rem; color: #1565c0; font-weight: 600;">{{ $attendanceModeLabel }}</p>
+                </div>
+                <div>
+                    <p style="margin: 0 0 0.25rem 0; font-size: 0.85rem; color: #5f6368; font-weight: 500;">EVENT START DATE</p>
+                    <p style="margin: 0; font-size: 1rem; color: #1565c0; font-weight: 600;">{{ $eventStartDate }}</p>
+                </div>
+            </div>
+            <p style="margin: 0.75rem 0 0 0; font-size: 0.85rem; color: #5f6368;">
+                <strong>Note:</strong> Your attendance mode cannot be changed after registration. Please contact the organizer if you need to modify this.
+            </p>
+        </div>
 
         <form action="{{ route('registrations.update', $registration) }}" method="POST" enctype="multipart/form-data">
             @csrf
@@ -449,10 +701,14 @@ use Illuminate\Support\Facades\Storage;
                 @if(count($themes) > 0)
                 <div class="form-group">
                     <label class="required" for="paper_theme">{{ $isInnovation ? 'Product' : 'Paper' }} Theme</label>
+                    @php
+                        // Get the correct theme value based on event type
+                        $currentTheme = $isInnovation ? $paper->product_theme : $paper->paper_theme;
+                    @endphp
                     <select name="paper_theme" id="paper_theme" class="form-control" required>
                         <option value="">Select a theme</option>
                         @foreach($themes as $theme)
-                            <option value="{{ $theme }}" {{ old('paper_theme', $paper->product_theme) == $theme ? 'selected' : '' }}>
+                            <option value="{{ $theme }}" {{ old('paper_theme', $currentTheme) == $theme ? 'selected' : '' }}>
                                 {{ $theme }}
                             </option>
                         @endforeach

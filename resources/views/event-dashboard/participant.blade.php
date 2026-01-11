@@ -4,6 +4,157 @@
 
 @section('styles')
     <style>
+        /* Profile Section */
+        .profile-section {
+            position: fixed !important;
+            top: 1rem !important;
+            right: 1rem !important;
+            left: auto !important;
+            z-index: 10000 !important;
+        }
+
+        .profile-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            padding: 0.4rem 0.8rem 0.4rem 0.4rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 200px;
+        }
+
+        .profile-button:hover {
+            border-color: #3498db;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .profile-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .profile-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.85rem;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+
+        .profile-email {
+            font-size: 0.7rem;
+            color: #7f8c8d;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+
+        .profile-dropdown {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            min-width: 220px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .profile-section.active .profile-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .profile-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #2c3e50;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .profile-dropdown-item:first-child {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .profile-dropdown-item:last-child {
+            border-bottom: none;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .profile-dropdown-item:hover {
+            background: #f8f9fa;
+            padding-left: 1.25rem;
+        }
+
+        .profile-dropdown-item.logout {
+            color: #e74c3c;
+        }
+
+        .profile-dropdown-item.logout:hover {
+            background: #fee;
+        }
+
+        .profile-dropdown-icon {
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .profile-section {
+                top: 0.5rem;
+                right: 0.5rem;
+            }
+
+            .profile-info {
+                display: none;
+            }
+
+            .profile-button {
+                padding: 0.5rem;
+            }
+        }
+
         /* Ensure modal displays as overlay */
         #paymentModal.modal {
             display: none;
@@ -200,6 +351,66 @@
 @endsection
 
 @section('content')
+    <!-- Profile Section -->
+    {{-- @auth
+    <div class="profile-section" id="profileSection">
+        <div class="profile-button" onclick="toggleProfile()">
+            <div class="profile-avatar">
+                @if(Auth::user()->profile_picture)
+                    <img src="{{ Auth::user()->profile_picture }}" alt="{{ Auth::user()->name }}">
+                @else
+                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                @endif
+            </div>
+            <div class="profile-info">
+                <div class="profile-name">{{ Auth::user()->name }}</div>
+                <div class="profile-email">{{ Auth::user()->email }}</div>
+            </div>
+        </div>
+
+        <div class="profile-dropdown">
+            <a href="{{ route('dashboard') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">🏠</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ route('account.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">👤</span>
+                <span>My Account</span>
+            </a>
+            <a href="{{ route('registrations.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">📝</span>
+                <span>My Registrations</span>
+            </a>
+            <a href="{{ route('events.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">🎫</span>
+                <span>Browse Events</span>
+            </a>
+            <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
+                @csrf
+                <button type="submit" class="profile-dropdown-item logout" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: 1rem; font-family: inherit;">
+                    <span class="profile-dropdown-icon">🚪</span>
+                    <span>Logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleProfile() {
+            const profileSection = document.getElementById('profileSection');
+            profileSection.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const profileSection = document.getElementById('profileSection');
+            if (!profileSection.contains(event.target)) {
+                profileSection.classList.remove('active');
+            }
+        });
+    </script>
+    @endauth --}}
+
     <a href="{{ route('registrations.index') }}"
         style="padding: 0.75rem 1.5rem; background: #6c7778; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
         ← Back to My Registrations
@@ -276,6 +487,53 @@
                 @if ($paper && $paper->title)
                     <!-- Display Submitted Product -->
                     <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                        
+                        {{-- Paper Status Display for Conference Events --}}
+                        @if(!$isInnovation && $registration->presentation_status)
+                            @php
+                                $statusConfig = [
+                                    'selected' => [
+                                        'bg' => 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+                                        'icon' => '✓',
+                                        'title' => 'Paper Selected',
+                                        'message' => 'Congratulations! Your paper has been selected for presentation.',
+                                        'shadow' => 'rgba(39, 174, 96, 0.3)'
+                                    ],
+                                    'rejected' => [
+                                        'bg' => 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+                                        'icon' => '✗',
+                                        'title' => 'Paper Not Selected',
+                                        'message' => 'Unfortunately, your paper was not selected for presentation at this time.',
+                                        'shadow' => 'rgba(231, 76, 60, 0.3)'
+                                    ],
+                                    'pending' => [
+                                        'bg' => 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+                                        'icon' => '⏳',
+                                        'title' => 'Under Review',
+                                        'message' => 'Your paper is currently under review by the organizers.',
+                                        'shadow' => 'rgba(243, 156, 18, 0.3)'
+                                    ]
+                                ];
+                                
+                                $status = strtolower($registration->presentation_status);
+                                $config = $statusConfig[$status] ?? $statusConfig['pending'];
+                            @endphp
+                            
+                            <div style="background: {{ $config['bg'] }}; color: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 4px 12px {{ $config['shadow'] }};">
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    <div style="font-size: 2.5rem;">{{ $config['icon'] }}</div>
+                                    <div style="flex: 1;">
+                                        <h4 style="margin: 0 0 0.5rem 0; color: white; font-size: 1.1rem; font-weight: 700;">
+                                            {{ $config['title'] }}
+                                        </h4>
+                                        <p style="margin: 0; font-size: 0.9rem; opacity: 0.95;">
+                                            {{ $config['message'] }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                        
                         <div style="display: flex; justify-content: between; align-items: start; margin-bottom: 1rem;">
                             <div style="flex: 1;">
                                 <h4 style="margin: 0 0 1rem 0; color: #2c3e50; font-size: 1.2rem;">{{ $paper->title }}</h4>
@@ -306,17 +564,47 @@
                                 @endif
 
                                 <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem;">
-                                    @if ($paper->poster_path)
-                                        <div class="poster-preview">
-                                            <h4>{{ $isInnovation ? 'Poster' : 'Paper' }}</h4>
-                                            @if($isInnovation)
-                                                <img src="{{ $paper->poster_path }}" alt="Product Poster">
-                                            @else
-                                                <a href="{{ $paper->poster_path }}" target="_blank" 
+                                    @php
+                                        // Get the correct file path based on event type
+                                        $filePath = $isInnovation ? $paper->poster_path : $paper->paper_path;
+                                    @endphp
+                                    
+                                    @if ($filePath)
+                                        <div style="width: 100%; margin-top: 1rem;">
+                                            <h4 style="margin: 0 0 1rem 0; color: #2c3e50;">{{ $isInnovation ? '🎨 Poster Preview' : '📄 Paper Preview' }}</h4>
+                                            
+                                            @php
+                                                $fileUrl = strtolower($filePath);
+                                                $isPDF = str_contains($fileUrl, '.pdf');
+                                                $isWordDoc = str_contains($fileUrl, '.doc') || str_contains($fileUrl, '.docx') || str_contains($fileUrl, '.tmp');
+                                                $isImage = preg_match('/\.(jpg|jpeg|png|gif|bmp|webp)$/i', $fileUrl);
+                                            @endphp
+                                            
+                                            <div style="border: 2px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: #f8f9fa;">
+                                                @if($isImage || $isInnovation)
+                                                    {{-- Display images directly --}}
+                                                    <img src="{{ $filePath }}" alt="{{ $isInnovation ? 'Product Poster' : 'Paper' }}" 
+                                                         style="width: 100%; height: auto; display: block;">
+                                                @elseif($isPDF)
+                                                    {{-- Display PDF in iframe --}}
+                                                    <iframe src="{{ $filePath }}#toolbar=0&navpanes=0&scrollbar=1" 
+                                                            style="width: 100%; height: 600px; border: none;">
+                                                    </iframe>
+                                                @elseif($isWordDoc)
+                                                    {{-- Use Google Docs Viewer for Word documents --}}
+                                                    <iframe src="https://docs.google.com/viewer?url={{ urlencode($filePath) }}&embedded=true" 
+                                                            style="width: 100%; height: 600px; border: none;">
+                                                    </iframe>
+                                                @endif
+                                            </div>
+                                            
+                                            {{-- Download button --}}
+                                            <div style="margin-top: 0.75rem; text-align: center;">
+                                                <a href="{{ $filePath }}" download 
                                                    style="display: inline-block; padding: 0.75rem 1.5rem; background: #3498db; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
-                                                    📄 View Paper
+                                                    📥 Download {{ $isInnovation ? 'Poster' : 'Paper' }}
                                                 </a>
-                                            @endif
+                                            </div>
                                         </div>
                                     @endif
                                     @if ($paper->video_url)
@@ -893,37 +1181,9 @@
                                     Event ended: {{ $event->end_date->format('M d, Y h:i A') }}</p>
                             </div>
                         @else
-                            @if ($presentationQR)
-                                <div style="text-align: center; margin-bottom: 1.5rem;">
-                                    <p style="margin: 0 0 1rem 0; color: #2c3e50; font-weight: 600;">Option 1: Scan QR Code
-                                    </p>
-                                    <img src="{{ $presentationQR->qr_image_url }}" alt="Attendance QR Code"
-                                        style="width: 100%; max-width: 250px; border: 4px solid #43e97b; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 1rem;">
-                                    <p style="margin: 0 0 0 0; color: #7f8c8d; font-size: 0.9rem;">Scan this QR code at the
-                                        event venue</p>
-                                </div>
-
-                                <div
-                                    style="border-top: 2px solid #e0e0e0; padding-top: 1.5rem; margin-top: 1.5rem; text-align: center;">
-                                    <p style="margin: 0 0 1rem 0; color: #2c3e50; font-weight: 600;">Option 2: Manual
-                                        Check-In
-                                    </p>
-                                </div>
-                            @else
-                                <div
-                                    style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; text-align: center; margin-bottom: 1.5rem;">
-                                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⏳</div>
-                                    <p style="margin: 0; color: #856404;">QR code is being generated...</p>
-                                </div>
-
-                                <div style="border-top: 2px solid #e0e0e0; padding-top: 1.5rem; text-align: center;">
-                                    <p style="margin: 0 0 1rem 0; color: #2c3e50; font-weight: 600;">Manual Check-In</p>
-                                </div>
-                            @endif
-
                             <button id="manualCheckInBtn"
                                 style="width: 100%; padding: 0.75rem; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s;">
-                                ✓ Mark Attendance Manually
+                                ✓ Mark Attendance
                             </button>
                             <div id="checkInMessage"
                                 style="display: none; margin-top: 0.75rem; padding: 0.75rem; border-radius: 6px; text-align: center;">

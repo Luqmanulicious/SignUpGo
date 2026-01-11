@@ -94,6 +94,18 @@ class Event extends Model
         'innovation_theme' => 'array',
         'conference_categories' => 'array',
         'conference_theme' => 'array',
+        'f2f_paper_deadline' => 'datetime',
+        'f2f_reviewer_registration_deadline' => 'datetime',
+        'f2f_jury_registration_deadline' => 'datetime',
+        'f2f_review_deadline' => 'datetime',
+        'f2f_acceptance_notification_date' => 'datetime',
+        'f2f_payment_deadline' => 'datetime',
+        'online_paper_deadline' => 'datetime',
+        'online_reviewer_registration_deadline' => 'datetime',
+        'online_jury_registration_deadline' => 'datetime',
+        'online_review_deadline' => 'datetime',
+        'online_acceptance_notification_date' => 'datetime',
+        'online_payment_deadline' => 'datetime',
     ];
     
     protected $appends = ['poster_url'];

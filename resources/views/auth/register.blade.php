@@ -24,8 +24,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: url('https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1920&q=80') no-repeat center center/cover;
-            filter: blur(8px);
+            background:
+                linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+                url('{{ asset('images/background3.png') }}') no-repeat center center/cover;
             z-index: -1;
         }
 
@@ -36,7 +37,7 @@
             padding: 3rem;
             text-align: center;
             color: white;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            box-shadow: none;
             width: 90%;
             max-width: 500px;
             max-height: 90vh;
@@ -55,7 +56,7 @@
         h1 {
             margin-bottom: 1.5rem;
             font-size: 1.8rem;
-            color: black;
+            color: white;
         }
 
         .form-group {
@@ -68,13 +69,14 @@
             display: block;
             margin-bottom: 0.5rem;
             font-size: 0.9rem;
-            color: black;
+            color: white;
+            font-weight: 600;
         }
 
         .form-group input {
             width: 100%;
             padding: 0.8rem;
-            padding-right: 45px; 
+            padding-right: 45px;
             border: none;
             border-radius: 10px;
             background: rgba(255, 255, 255, 0.9);
@@ -170,10 +172,11 @@
             position: relative;
             cursor: pointer;
             font-size: 0.9rem;
-            color: black;
+            color: white;
             display: flex;
             align-items: center;
             user-select: none;
+            font-weight: 600;
         }
 
         .show-password-checkbox input {
@@ -234,18 +237,18 @@
         }
 
         .btn:hover {
-            background-color: #000;
+            background-color: #0dc40d;
             color: #fff;
         }
 
         .links {
             font-size: 0.9rem;
             margin-top: 1rem;
-            color: black;
+            color: white;
         }
 
         .links a {
-            color: black;
+            color: rgb(116, 218, 255);
             text-decoration: none;
             font-weight: 600;
         }
@@ -272,12 +275,12 @@
             font-size: 1.1rem;
             margin-bottom: 0.5rem;
             font-weight: 600;
-            color: black;
+            color: white;
         }
 
         .optional-subtitle {
             font-size: 0.85rem;
-            color: black;
+            color: white;
             margin-bottom: 1.5rem;
         }
 
@@ -315,14 +318,15 @@
             justify-content: center;
             padding: 0.8rem;
             background: rgba(255, 255, 255, 0.9);
-            color: #333;
+            color: black;
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
         .file-input-label:hover {
-            background: rgba(255, 255, 255, 1);
+            background: rgb(210, 187, 255);
+            color: #000
         }
 
         .file-name {
@@ -366,11 +370,12 @@
             <div class="form-group">
                 <label for="password">Password<span class="required">*</span></label>
                 <input type="password" id="password" name="password" required>
-                <button type="button" class="toggle-password" id="togglePassword" onclick="togglePasswordFields()" aria-label="Toggle password visibility">
+                <button type="button" class="toggle-password" id="togglePassword" onclick="togglePasswordFields()"
+                    aria-label="Toggle password visibility">
                     <span class="eye-icon">
                         <svg viewBox="0 0 24 24">
-                            <path d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7z"/>
-                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7z" />
+                            <circle cx="12" cy="12" r="3" />
                         </svg>
                     </span>
                     <span class="eye-slash"></span>
@@ -380,11 +385,12 @@
             <div class="form-group">
                 <label for="password_confirmation">Confirm Password<span class="required">*</span></label>
                 <input type="password" id="password_confirmation" name="password_confirmation" required>
-                <button type="button" class="toggle-password" id="togglePasswordConfirm" onclick="togglePasswordFields()" aria-label="Toggle password visibility">
+                <button type="button" class="toggle-password" id="togglePasswordConfirm"
+                    onclick="togglePasswordFields()" aria-label="Toggle password visibility">
                     <span class="eye-icon">
                         <svg viewBox="0 0 24 24">
-                            <path d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7z"/>
-                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7z" />
+                            <circle cx="12" cy="12" r="3" />
                         </svg>
                     </span>
                     <span class="eye-slash"></span>
@@ -406,17 +412,20 @@
 
                 <div class="form-group">
                     <label for="phone">Phone Number</label>
-                    <input type="text" id="phone" name="phone" value="{{ old('phone') }}" placeholder="+60123456789">
+                    <input type="text" id="phone" name="phone" value="{{ old('phone') }}"
+                        placeholder="+60123456789">
                 </div>
 
                 <div class="form-group">
                     <label for="job_title">Job Title</label>
-                    <input type="text" id="job_title" name="job_title" value="{{ old('job_title') }}" placeholder="e.g., Software Engineer">
+                    <input type="text" id="job_title" name="job_title" value="{{ old('job_title') }}"
+                        placeholder="e.g., Software Engineer">
                 </div>
 
                 <div class="form-group">
                     <label for="organization">Organization/Institute</label>
-                    <input type="text" id="organization" name="organization" value="{{ old('organization') }}" placeholder="e.g., University of Malaya">
+                    <input type="text" id="organization" name="organization" value="{{ old('organization') }}"
+                        placeholder="e.g., University of Malaya">
                 </div>
 
                 <div class="form-group">
@@ -426,18 +435,21 @@
 
                 <div class="form-group">
                     <label for="postcode">Postcode</label>
-                    <input type="text" id="postcode" name="postcode" value="{{ old('postcode') }}" placeholder="50000">
+                    <input type="text" id="postcode" name="postcode" value="{{ old('postcode') }}"
+                        placeholder="50000">
                 </div>
 
                 <div class="form-group">
                     <label for="website">Website</label>
-                    <input type="url" id="website" name="website" value="{{ old('website') }}" placeholder="https://yourwebsite.com">
+                    <input type="url" id="website" name="website" value="{{ old('website') }}"
+                        placeholder="https://yourwebsite.com">
                 </div>
 
                 <div class="form-group">
                     <label for="certificate">Certificate (For Jury/Reviewer)</label>
                     <div class="file-input-wrapper">
-                        <input type="file" id="certificate" name="certificate" accept=".pdf,.jpg,.jpeg,.png" onchange="updateFileName('certificate')">
+                        <input type="file" id="certificate" name="certificate" accept=".pdf,.jpg,.jpeg,.png"
+                            onchange="updateFileName('certificate')">
                         <label for="certificate" class="file-input-label">
                             📄 Choose Certificate File
                         </label>
@@ -448,7 +460,8 @@
                 <div class="form-group">
                     <label for="resume">Resume/CV</label>
                     <div class="file-input-wrapper">
-                        <input type="file" id="resume" name="resume" accept=".pdf,.doc,.docx" onchange="updateFileName('resume')">
+                        <input type="file" id="resume" name="resume" accept=".pdf,.doc,.docx"
+                            onchange="updateFileName('resume')">
                         <label for="resume" class="file-input-label">
                             📋 Choose Resume File
                         </label>
@@ -502,7 +515,7 @@
         function updateFileName(inputId) {
             const input = document.getElementById(inputId);
             const fileNameSpan = document.getElementById(inputId + '-name');
-            
+
             if (input.files && input.files.length > 0) {
                 const fileName = input.files[0].name;
                 fileNameSpan.textContent = '✓ ' + fileName;

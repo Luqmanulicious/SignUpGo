@@ -22,8 +22,9 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: url('https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1920&q=80') no-repeat center center/cover;
-      filter: blur(8px);
+      background: 
+        linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+        url('{{ asset('images/background3.png') }}') no-repeat center center/cover;
       z-index: -1;
     }
 
@@ -51,18 +52,20 @@
     h1 {
       margin-bottom: 1rem;
       font-size: 2rem;
-      color: black;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
 
     p {
       margin-bottom: 2rem;
       font-size: 1.1rem;
       line-height: 1.5;
-      color: black;
+      color: white;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
     }
 
     a {
-      background-color: #ffffff;
+      background-color: rgba(0, 255, 255, 0.9);
       color: #000;
       text-decoration: none;
       padding: 0.8rem 2rem;
@@ -72,11 +75,14 @@
       display: inline-block;
       margin: 0.5rem;
       white-space: nowrap;
+      box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
     }
 
     a:hover {
-      background-color: #000;
+      background-color: rgba(0, 200, 255, 1);
       color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 255, 255, 0.5);
     }
 
     .button-container {
@@ -88,15 +94,15 @@
     }
 
     .btn-primary {
-      background-color: #ffffff;
+      background-color: rgba(255, 255, 255, 0.9);
     }
 
     .btn-secondary {
-      background-color: #ffffff;
+      background-color: rgba(255, 255, 255, 0.9);
     }
 
     .btn-secondary:hover {
-      background-color: #000000;
+      background-color: rgb(63, 114, 0);
       color: #ffffff;
     }
   </style>

@@ -650,19 +650,24 @@
                     $config = $eventTypeConfig[$eventType];
                     $registrations = $eventTypeGroups->get($eventType, collect());
                     
-                    // Count roles - only successful/approved registrations
+                    // Count roles - only successful/approved registrations, exclude cancelled
                     $juryCount = $registrations->filter(function($r) {
-                        return in_array($r->role, ['jury', 'both']) && in_array($r->status, ['approved', 'confirmed']);
+                        return in_array($r->role, ['jury', 'both']) && in_array($r->status, ['approved', 'confirmed']) && $r->status !== 'cancelled';
                     })->count();
                     
                     $reviewerCount = $registrations->filter(function($r) {
-                        return in_array($r->role, ['reviewer', 'both']) && in_array($r->status, ['approved', 'confirmed']);
+                        return in_array($r->role, ['reviewer', 'both']) && in_array($r->status, ['approved', 'confirmed']) && $r->status !== 'cancelled';
                     })->count();
                     
-                    // Count only successful participants (approved/confirmed and not rejected presentations)
+                    // Count only successful participants (approved/confirmed and not rejected presentations), exclude cancelled
                     $participantCount = $registrations->filter(function($r) use ($eventType) {
                         // Must be participant role
                         if (!in_array($r->role, ['participant', 'both'])) {
+                            return false;
+                        }
+                        
+                        // Exclude cancelled registrations
+                        if ($r->status === 'cancelled') {
                             return false;
                         }
                         

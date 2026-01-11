@@ -13,6 +13,157 @@
             margin-bottom: 2rem;
         }
 
+        /* Profile Section */
+        .profile-section {
+            position: fixed !important;
+            top: 1rem !important;
+            right: 1rem !important;
+            left: auto !important;
+            z-index: 10000 !important;
+        }
+
+        .profile-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            padding: 0.4rem 0.8rem 0.4rem 0.4rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 200px;
+        }
+
+        .profile-button:hover {
+            border-color: #3498db;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .profile-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .profile-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.85rem;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+
+        .profile-email {
+            font-size: 0.7rem;
+            color: #7f8c8d;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+
+        .profile-dropdown {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            min-width: 220px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .profile-section.active .profile-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .profile-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #2c3e50;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .profile-dropdown-item:first-child {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .profile-dropdown-item:last-child {
+            border-bottom: none;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .profile-dropdown-item:hover {
+            background: #f8f9fa;
+            padding-left: 1.25rem;
+        }
+
+        .profile-dropdown-item.logout {
+            color: #e74c3c;
+        }
+
+        .profile-dropdown-item.logout:hover {
+            background: #fee;
+        }
+
+        .profile-dropdown-icon {
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .profile-section {
+                top: 0.5rem;
+                right: 0.5rem;
+            }
+
+            .profile-info {
+                display: none;
+            }
+
+            .profile-button {
+                padding: 0.5rem;
+            }
+        }
+
         .page-header h1 {
             margin: 0 0 0.5rem 0;
             color: #2c3e50;
@@ -565,6 +716,66 @@
 @endsection
 
 @section('content')
+    <!-- Profile Section -->
+    @auth
+    <div class="profile-section" id="profileSection">
+        <div class="profile-button" onclick="toggleProfile()">
+            <div class="profile-avatar">
+                @if(Auth::user()->profile_picture)
+                    <img src="{{ Auth::user()->profile_picture }}" alt="{{ Auth::user()->name }}">
+                @else
+                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                @endif
+            </div>
+            <div class="profile-info">
+                <div class="profile-name">{{ Auth::user()->name }}</div>
+                <div class="profile-email">{{ Auth::user()->email }}</div>
+            </div>
+        </div>
+
+        <div class="profile-dropdown">
+            <a href="{{ route('dashboard') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">🏠</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ route('account.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">👤</span>
+                <span>My Account</span>
+            </a>
+            <a href="{{ route('registrations.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">📝</span>
+                <span>My Registrations</span>
+            </a>
+            <a href="{{ route('events.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">🎫</span>
+                <span>Browse Events</span>
+            </a>
+            <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
+                @csrf
+                <button type="submit" class="profile-dropdown-item logout" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: 1rem; font-family: inherit;">
+                    <span class="profile-dropdown-icon">🚪</span>
+                    <span>Logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleProfile() {
+            const profileSection = document.getElementById('profileSection');
+            profileSection.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const profileSection = document.getElementById('profileSection');
+            if (!profileSection.contains(event.target)) {
+                profileSection.classList.remove('active');
+            }
+        });
+    </script>
+    @endauth
+
     <div class="container">
         <div class="page-header">
             <h1>My Registrations</h1>
@@ -678,10 +889,21 @@
                                                     } catch (\Exception $e) {
                                                         $startDate = 'TBA';
                                                     }
+                                                    
+                                                    // Determine role badge color
+                                                    $overviewRoleBadgeColor = '#28a745'; // Green for successful
+                                                    $isConfParticipant = in_array($reg->role, ['participant', 'both']);
+                                                    if (in_array($reg->status, ['rejected', 'cancelled']) || 
+                                                        ($isConfParticipant && $reg->presentation_status === 'rejected')) {
+                                                        $overviewRoleBadgeColor = '#dc3545'; // Red
+                                                    } elseif ($reg->status === 'pending' || 
+                                                              ($isConfParticipant && empty($reg->presentation_status) && $reg->paper)) {
+                                                        $overviewRoleBadgeColor = '#ffc107'; // Yellow
+                                                    }
                                                 @endphp
                                                 📅 {{ $startDate }}
                                             </div>
-                                            <span class="overview-event-role">{{ ucfirst($reg->role) }}</span>
+                                            <span class="overview-event-role" style="background: {{ $overviewRoleBadgeColor }}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem;">{{ ucfirst($reg->role) }}</span>
                                         </div>
                                     @endforeach
                                 </div>
@@ -730,10 +952,18 @@
                                                     } catch (\Exception $e) {
                                                         $startDate = 'TBA';
                                                     }
+                                                    
+                                                    // Determine role badge color
+                                                    $overviewRoleBadgeColor = '#28a745'; // Green for successful
+                                                    if (in_array($reg->status, ['rejected', 'cancelled'])) {
+                                                        $overviewRoleBadgeColor = '#dc3545'; // Red
+                                                    } elseif ($reg->status === 'pending') {
+                                                        $overviewRoleBadgeColor = '#ffc107'; // Yellow
+                                                    }
                                                 @endphp
                                                 📅 {{ $startDate }}
                                             </div>
-                                            <span class="overview-event-role">{{ ucfirst($reg->role) }}</span>
+                                            <span class="overview-event-role" style="background: {{ $overviewRoleBadgeColor }}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem;">{{ ucfirst($reg->role) }}</span>
                                         </div>
                                     @endforeach
                                 </div>
@@ -796,10 +1026,6 @@
                             </p>
                         </div>
                         <div class="badges">
-                            <span class="badge badge-{{ $registration->role }}">
-                                {{ ucfirst($registration->role) }}
-                            </span>
-
                             @php
                                 $isConference = strtolower($event->event_type) === 'conference';
                                 $isParticipant = in_array($registration->role, ['participant', 'both']);
@@ -812,10 +1038,37 @@
                                         ->exists();
                                 }
                             @endphp
+                            
+                            <!-- Role Badge with fixed colors per role -->
+                            @if($registration->role === 'participant')
+                                <span class="badge" style="background: #17a2b8; color: white; border: none;">
+                                    Participant
+                                </span>
+                            @elseif($registration->role === 'jury')
+                                <span class="badge" style="background: #6f42c1; color: white; border: none;">
+                                    Jury
+                                </span>
+                            @elseif($registration->role === 'reviewer')
+                                <span class="badge" style="background: #e83e8c; color: white; border: none;">
+                                    Reviewer
+                                </span>
+                            @elseif($registration->role === 'both')
+                                <span class="badge" style="background: #fd7e14; color: white; border: none;">
+                                    Both
+                                </span>
+                            @else
+                                <span class="badge" style="background: #6c757d; color: white; border: none;">
+                                    {{ ucfirst($registration->role) }}
+                                </span>
+                            @endif
 
                             @if ($isConference && $isParticipant)
                                 <!-- Conference Participant Status - Check presentation_status first -->
-                                @if ($registration->presentation_status === 'selected')
+                                @if ($registration->status === 'cancelled')
+                                    <span class="badge badge-danger">
+                                        ✗ Not Selected by EO
+                                    </span>
+                                @elseif($registration->presentation_status === 'selected')
                                     <span class="badge badge-success">
                                         ✓ Selected
                                     </span>

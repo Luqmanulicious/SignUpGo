@@ -2,12 +2,160 @@
 
 @section('title', 'Reviewer Dashboard - ' . $event->title)
 
-@section('content')
-    <!-- Include Toast Notification Component -->
-    @include('components.toast-notification')
+@section('styles')
+<style>
+    /* Profile Section */
+    .profile-section {
+        position: fixed !important;
+        top: 1rem !important;
+        right: 1rem !important;
+        left: auto !important;
+        z-index: 10000 !important;
+    }
 
-    <style>
-        .toast {
+    .profile-button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 50px;
+        padding: 0.4rem 0.8rem 0.4rem 0.4rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        max-width: 200px;
+    }
+
+    .profile-button:hover {
+        border-color: #3498db;
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .profile-avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .profile-info {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .profile-name {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 0.85rem;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 140px;
+    }
+
+    .profile-email {
+        font-size: 0.7rem;
+        color: #7f8c8d;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 140px;
+    }
+
+    .profile-dropdown {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        min-width: 220px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+    }
+
+    .profile-section.active .profile-dropdown {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .profile-dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        color: #2c3e50;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .profile-dropdown-item:first-child {
+        border-radius: 12px 12px 0 0;
+    }
+
+    .profile-dropdown-item:last-child {
+        border-bottom: none;
+        border-radius: 0 0 12px 12px;
+    }
+
+    .profile-dropdown-item:hover {
+        background: #f8f9fa;
+        padding-left: 1.25rem;
+    }
+
+    .profile-dropdown-item.logout {
+        color: #e74c3c;
+    }
+
+    .profile-dropdown-item.logout:hover {
+        background: #fee;
+    }
+
+    .profile-dropdown-icon {
+        font-size: 1.1rem;
+    }
+
+    @media (max-width: 768px) {
+        .profile-section {
+            top: 0.5rem;
+            right: 0.5rem;
+        }
+
+        .profile-info {
+            display: none;
+        }
+
+        .profile-button {
+            padding: 0.5rem;
+        }
+    }
+
+    .toast {
             min-width: 300px;
             padding: 1rem 1.5rem;
             border-radius: 8px;
@@ -248,6 +396,76 @@
             gap: 0.5rem;
         }
     </style>
+@endsection
+
+@section('content')
+    <!-- Include Toast Notification Component -->
+    @include('components.toast-notification')
+
+    <!-- Profile Section -->
+    {{-- @auth
+    <div class="profile-section" id="profileSection">
+        <div class="profile-button" onclick="toggleProfile()">
+            <div class="profile-avatar">
+                @if(Auth::user()->profile_picture)
+                    <img src="{{ Auth::user()->profile_picture }}" alt="{{ Auth::user()->name }}">
+                @else
+                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                @endif
+            </div>
+            <div class="profile-info">
+                <div class="profile-name">{{ Auth::user()->name }}</div>
+                <div class="profile-email">{{ Auth::user()->email }}</div>
+            </div>
+        </div>
+
+        <div class="profile-dropdown">
+            <a href="{{ route('dashboard') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">🏠</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ route('account.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">👤</span>
+                <span>My Account</span>
+            </a>
+            <a href="{{ route('registrations.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">📝</span>
+                <span>My Registrations</span>
+            </a>
+            <a href="{{ route('events.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">🎫</span>
+                <span>Browse Events</span>
+            </a>
+            <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
+                @csrf
+                <button type="submit" class="profile-dropdown-item logout" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: 1rem; font-family: inherit;">
+                    <span class="profile-dropdown-icon">🚪</span>
+                    <span>Logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleProfile() {
+            const profileSection = document.getElementById('profileSection');
+            profileSection.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const profileSection = document.getElementById('profileSection');
+            if (!profileSection.contains(event.target)) {
+                profileSection.classList.remove('active');
+            }
+        });
+    </script>
+    @endauth --}}
+
+    @php
+        // Check if evaluations have been submitted
+        $evaluationsSubmitted = !is_null($registration->evaluations_submitted_at);
+    @endphp
 
     <a href="{{ route('registrations.index') }}"
         style="padding: 0.75rem 1.5rem; background: #6c7778; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
@@ -345,15 +563,14 @@
                                     <span style="font-size: 0.85rem; color: #27ae60; font-weight: 600;">✓ Completed: {{ $completedReviews }}</span>
                                     <span style="font-size: 0.85rem; color: #e74c3c; font-weight: 600;">✗ Missed: {{ $totalAssigned - $completedReviews }}</span>
                                 </div>
-                                <div style="width: 100%; height: 30px; background: #f8f9fa; border-radius: 15px; overflow: hidden; display: flex; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
+                                <div style="width: 100%; height: 30px; background: #e74c3c; border-radius: 15px; overflow: hidden; display: flex; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
                                     @if($percentage > 0)
                                         <div style="width: {{ $percentage }}%; background: linear-gradient(135deg, #27ae60 0%, #229954 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem; transition: width 0.5s ease;">
                                             {{ $percentage }}%
                                         </div>
-                                    @endif
-                                    @if($percentage < 100)
-                                        <div style="width: {{ 100 - $percentage }}%; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem; transition: width 0.5s ease;">
-                                            {{ 100 - $percentage }}%
+                                    @else
+                                        <div style="width: 100%; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem; transition: width 0.5s ease;">
+                                            0%
                                         </div>
                                     @endif
                                 </div>
@@ -427,6 +644,21 @@
                 $hasFeedback = \App\Models\Feedback::where('event_registration_id', $registration->id)->exists();
             @endphp
 
+            {{-- Certificate Eligibility Notice --}}
+            @if($eventEnded && !$allEvaluationsCompleted)
+                <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem; color: white;">
+                        <div style="font-size: 3rem;">🚫</div>
+                        <div style="flex: 1;">
+                            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 700;">Certificate Not Available</h3>
+                            <p style="margin: 0; opacity: 0.95; font-size: 0.95rem;">
+                                Since you didn't finish evaluating all the participants, you are not eligible to receive a certificate for this event.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             {{-- Feedback Section for Reviewers (After All Evaluations Completed) --}}
             @if($eventEnded && $allEvaluationsCompleted)
                 @if($hasFeedback)
@@ -474,6 +706,15 @@
                 </button> --}}
             </div>
 
+                @if ($evaluationsSubmitted)
+                    <div
+                        style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 1rem 2rem; border-radius: 8px; margin: 1rem 0; text-align: center; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);">
+                        <strong>✅ Evaluations Submitted</strong> - Your evaluations have been finalized on
+                        {{ \Carbon\Carbon::parse($registration->evaluations_submitted_at)->format('M d, Y h:i A') }}. They
+                        are now read-only.
+                    </div>
+                @endif
+
                 @if($assignedParticipants->isEmpty())
                     <div
                         style="background: #f8f9fa; padding: 3rem 2rem; border-radius: 8px; text-align: center; color: #7f8c8d;">
@@ -518,9 +759,13 @@
                                     @if($assignment->poster_path || $assignment->paper_path || $assignment->video_url)
                                         <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
                                             @if($assignment->poster_path || $assignment->paper_path)
-                                                <a href="{{ $assignment->poster_path ?? $assignment->paper_path }}" target="_blank" style="padding: 0.4rem 0.8rem; background: #ae17ab; color: white; text-decoration: none; border-radius: 4px; font-size: 0.85rem;">
+                                                <button type="button" onclick='openPaperPreviewModal({{ json_encode([
+                                                    "title" => $assignment->paper_title ?? "Paper",
+                                                    "category" => $assignment->product_category ?? $assignment->paper_theme ?? null,
+                                                    "paper" => $assignment->poster_path ?? $assignment->paper_path ?? null
+                                                ]) }})' style="padding: 0.4rem 0.8rem; background: #ae17ab; color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer;">
                                                      View Paper
-                                                </a>
+                                                </button>
                                             @endif
                                             @if($assignment->video_url)
                                                 <a href="{{ $assignment->video_url }}" target="_blank" style="padding: 0.4rem 0.8rem; background: #e74c3c; color: white; text-decoration: none; border-radius: 4px; font-size: 0.85rem;">
@@ -646,6 +891,11 @@
                                         <p style="margin: 0; color: #c62828; font-weight: 600; font-size: 0.9rem;">Review Deadline Has Passed</p>
                                         <p style="margin: 0.5rem 0 0 0; color: #d32f2f; font-size: 0.85rem;">Evaluation is no longer available for this participant.</p>
                                     </div>
+                                @elseif($evaluationsSubmitted)
+                                    <button disabled
+                                        style="width: 100%; padding: 0.75rem; background: #95a5a6; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: not-allowed;">
+                                        🔒 Evaluations Finalized
+                                    </button>
                                 @else
                                     <button onclick="openReviewModal(
                                         {{ $assignment->mapping_id }}, 
@@ -666,6 +916,43 @@
                             @endif
                         </div>
                     @endforeach
+                @endif
+
+                {{-- Submit All Evaluations Button --}}
+                @if (!$assignedParticipants->isEmpty() && !$evaluationsSubmitted)
+                    <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #e5e7eb;">
+                        @php
+                            $totalAssigned = $assignedParticipants->count();
+                            $completedReviews = $assignedParticipants->where('review_status', 'completed')->count();
+                            $allEvaluated = $completedReviews === $totalAssigned;
+                            $remainingEvaluations = $totalAssigned - $completedReviews;
+                            $percentage = $totalAssigned > 0 ? round(($completedReviews / $totalAssigned) * 100) : 0;
+                        @endphp
+
+                        @if ($allEvaluated)
+                            <button onclick="openSubmitAllModal()"
+                                style="width: 100%; padding: 1rem 2rem; background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);"
+                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(39, 174, 96, 0.4)'"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(39, 174, 96, 0.3)'">
+                                ✔️ Submit All Evaluations
+                            </button>
+                            <p
+                                style="margin: 0.75rem 0 0 0; text-align: center; color: #27ae60; font-size: 0.9rem; font-weight: 600;">
+                                ✅ All evaluations completed! Ready to submit.
+                            </p>
+                        @else
+                            <button onclick="showIncompleteWarning()"
+                                style="width: 100%; padding: 1rem 2rem; background: #95a5a6; color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: all 0.3s;"
+                                onmouseover="this.style.background='#7f8c8d'" onmouseout="this.style.background='#95a5a6'">
+                                🔒 Submit All Evaluations
+                            </button>
+                            <p
+                                style="margin: 0.75rem 0 0 0; text-align: center; color: #e74c3c; font-size: 0.9rem; font-weight: 600;">
+                                ⚠️ {{ $remainingEvaluations }} evaluation(s) remaining ({{ 100 - $percentage }}%
+                                incomplete)
+                            </p>
+                        @endif
+                    </div>
                 @endif
         </div>
     </div>
@@ -730,10 +1017,22 @@
                             <iframe id="paperPreviewFrame" style="width: 100%; height: 500px; border: none; display: none;"></iframe>
                             <img id="paperPreviewImage" style="width: 100%; height: auto; display: none;" alt="Paper Preview">
                         </div>
+                        <div style="margin-top: 0.5rem; text-align: center; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
+                            {{-- <button id="paperViewButton" type="button" onclick="document.getElementById('paperPreviewFrame').scrollIntoView({behavior: 'smooth', block: 'center'})"
+                                style="display: none; padding: 0.5rem 1rem; background: #2c5aa0; color: white; border: none; border-radius: 4px; font-size: 0.9rem; font-weight: 600; cursor: pointer;"
+                                onmouseover="this.style.background='#1e4078'" onmouseout="this.style.background='#2c5aa0'">
+                                📄 View Paper Above
+                            </button> --}}
+                            <a id="paperDownloadLink" href="#" download
+                                style="display: none; padding: 0.5rem 1rem; background: #27ae60; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9rem; font-weight: 600;"
+                                onmouseover="this.style.background='#1e8449'" onmouseout="this.style.background='#27ae60'">
+                                📥 Download Paper
+                            </a>
+                        </div>
                     </div>
                     
                     <div style="display: flex; gap: 0.75rem;">
-                        <a id="paperVideoLink" href="#" target="_blank" style="padding: 0.75rem 1.5rem; background: #e74c3c; color: white; text-decoration: none; border-radius: 6px; font-size: 1rem; font-weight: 600; display: none;">
+                        <a id="paperVideoLink" href="#" target="_blank" style="padding: 0.75rem 1.5rem; background: #04448d; color: white; text-decoration: none; border-radius: 6px; font-size: 1rem; font-weight: 600; display: none;">
                             🎥 Watch Video
                         </a>
                     </div>
@@ -795,7 +1094,9 @@
                                     <div style="background: #f8f9fa; padding: 1.25rem; border-left: 4px solid #9b59b6; border-right: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0;">
                                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
                                             <div style="flex: 1;">
-                                                <h4 style="margin: 0 0 0.25rem 0; color: #2c3e50; font-size: 1.05rem; font-weight: 600;">{{ $item->name }}</h4>
+                                                <h4 style="margin: 0 0 0.25rem 0; color: #2c3e50; font-size: 1.05rem; font-weight: 600;">
+                                                    {{ $item->name }} <span style="color: #e74c3c; font-size: 1.1rem;">*</span>
+                                                </h4>
                                                 @if($item->description)
                                                     <p style="margin: 0; color: #7f8c8d; font-size: 0.9rem; line-height: 1.5;">{{ $item->description }}</p>
                                                 @endif
@@ -807,7 +1108,7 @@
                                         
                                         <!-- Dynamic Score Selector based on max_score -->
                                         <div class="score-selector">
-                                            <div class="score-label">Score:</div>
+                                            <div class="score-label">Score: <span style="color: #e74c3c;">*</span></div>
                                             <div class="score-options">
                                                 @for ($i = 0; $i <= $item->max_score; $i++)
                                                     <button type="button" class="score-btn" data-item-id="{{ $item->id }}" data-score="{{ $i }}" onclick="selectScore({{ $item->id }}, {{ $i }})">
@@ -1079,29 +1380,52 @@
                 const paperPreviewContainer = document.getElementById('paperPreviewContainer');
                 const paperPreviewFrame = document.getElementById('paperPreviewFrame');
                 const paperPreviewImage = document.getElementById('paperPreviewImage');
+                const paperDownloadLink = document.getElementById('paperDownloadLink');
+                const paperViewButton = document.getElementById('paperViewButton');
                 
                 if (paperData.paper) {
                     // Show paper preview
                     paperPreviewContainer.style.display = 'block';
                     
-                    // Check if it's a PDF or document based on file extension or .tmp format
+                    // Check file type
                     const paperUrl = paperData.paper.toLowerCase();
-                    const isPDF = paperUrl.endsWith('.pdf') || 
-                                  paperUrl.endsWith('.tmp') || 
-                                  paperUrl.includes('.pdf') ||
-                                  paperUrl.endsWith('.doc') ||
-                                  paperUrl.endsWith('.docx');
+                    const isPDF = paperUrl.endsWith('.pdf') || paperUrl.includes('.pdf');
+                    const isWordDoc = paperUrl.endsWith('.doc') || paperUrl.endsWith('.docx') || paperUrl.endsWith('.tmp');
+                    const isImage = paperUrl.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i);
                     
                     if (isPDF) {
-                        // Display PDF in iframe with #view=FitH to prevent auto-download
+                        // Display PDF in iframe
                         paperPreviewFrame.src = paperData.paper + '#toolbar=0&navpanes=0&scrollbar=1';
                         paperPreviewFrame.style.display = 'block';
                         paperPreviewImage.style.display = 'none';
-                    } else {
+                        paperViewButton.style.display = 'inline-block';
+                        paperDownloadLink.href = paperData.paper;
+                        paperDownloadLink.style.display = 'inline-block';
+                    } else if (isWordDoc) {
+                        // Use Google Docs Viewer to display Word documents
+                        const encodedUrl = encodeURIComponent(paperData.paper);
+                        paperPreviewFrame.src = `https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`;
+                        paperPreviewFrame.style.display = 'block';
+                        paperPreviewImage.style.display = 'none';
+                        paperViewButton.style.display = 'inline-block';
+                        // Also show download link for direct download
+                        paperDownloadLink.href = paperData.paper;
+                        paperDownloadLink.style.display = 'inline-block';
+                    } else if (isImage) {
                         // Display image
                         paperPreviewImage.src = paperData.paper;
                         paperPreviewImage.style.display = 'block';
                         paperPreviewFrame.style.display = 'none';
+                        paperViewButton.style.display = 'inline-block';
+                        paperDownloadLink.href = paperData.paper;
+                        paperDownloadLink.style.display = 'inline-block';
+                    } else {
+                        // Default: show download link
+                        paperDownloadLink.href = paperData.paper;
+                        paperDownloadLink.style.display = 'inline-block';
+                        paperViewButton.style.display = 'none';
+                        paperPreviewFrame.style.display = 'none';
+                        paperPreviewImage.style.display = 'none';
                     }
                 } else {
                     paperPreviewContainer.style.display = 'none';
@@ -1253,9 +1577,13 @@
             const categoryComments = document.querySelectorAll('.category-comment');
             
             let allScored = true;
+            let missingScores = [];
             rubricScores.forEach(input => {
-                if (!input.value) {
+                if (!input.value && input.value !== '0') {
                     allScored = false;
+                    const itemId = input.id.replace('score_', '');
+                    const itemName = document.querySelector(`[data-item-id="${itemId}"]`)?.closest('.score-selector')?.previousElementSibling?.querySelector('h4')?.textContent || `Item ${itemId}`;
+                    missingScores.push(itemName);
                 } else {
                     const rubricId = input.name.match(/\[(\d+)\]/)[1];
                     jsonData.rubric_scores[rubricId] = parseInt(input.value);
@@ -1272,7 +1600,16 @@
             
             // Validate all criteria are scored
             if (rubricScores.length > 0 && !allScored) {
-                showToast('warning', '⚠️ Incomplete Evaluation', 'Please score all evaluation criteria before submitting. All scores are required.', 4000);
+                const missingList = missingScores.length > 0 ? `\n\nMissing scores for:\n- ${missingScores.slice(0, 5).join('\n- ')}${missingScores.length > 5 ? `\n...and ${missingScores.length - 5} more` : ''}` : '';
+                showToast('warning', '⚠️ Incomplete Evaluation', `Please score all evaluation criteria before submitting. You have ${missingScores.length} criterion/criteria without scores.${missingList}`, 6000);
+                
+                // Scroll to first missing score
+                if (missingScores.length > 0) {
+                    const firstMissingInput = document.querySelector('.rubric-score:not([value])');
+                    if (firstMissingInput) {
+                        firstMissingInput.closest('.score-selector')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
                 return;
             }
 
@@ -1343,7 +1680,305 @@
         }
 
         // Reviewer attendance check-in removed - reviewers do not need to check in
+
+        // Paper Preview Modal Functions
+        function openPaperPreviewModal(paperData) {
+            const modal = document.getElementById('paperPreviewModal');
+            const previewFrame = document.getElementById('previewPaperFrame');
+            const previewImage = document.getElementById('previewPaperImage');
+            const downloadLink = document.getElementById('previewDownloadLink');
+            const titleElement = document.getElementById('previewPaperTitle');
+            const categoryElement = document.getElementById('previewPaperCategory');
+            
+            // Set paper title and category
+            titleElement.textContent = paperData.title || 'Untitled Paper';
+            categoryElement.textContent = paperData.category ? `Category: ${paperData.category}` : '';
+            
+            // Handle paper preview based on file type
+            if (paperData.paper) {
+                const paperUrl = paperData.paper.toLowerCase();
+                const isPDF = paperUrl.endsWith('.pdf') || paperUrl.includes('.pdf');
+                const isWordDoc = paperUrl.endsWith('.doc') || paperUrl.endsWith('.docx') || paperUrl.endsWith('.tmp');
+                const isImage = paperUrl.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i);
+                
+                if (isPDF) {
+                    previewFrame.src = paperData.paper + '#toolbar=0&navpanes=0&scrollbar=1';
+                    previewFrame.style.display = 'block';
+                    previewImage.style.display = 'none';
+                } else if (isWordDoc) {
+                    const encodedUrl = encodeURIComponent(paperData.paper);
+                    previewFrame.src = `https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`;
+                    previewFrame.style.display = 'block';
+                    previewImage.style.display = 'none';
+                } else if (isImage) {
+                    previewImage.src = paperData.paper;
+                    previewImage.style.display = 'block';
+                    previewFrame.style.display = 'none';
+                } else {
+                    previewFrame.style.display = 'none';
+                    previewImage.style.display = 'none';
+                }
+                
+                // Set download link
+                downloadLink.href = paperData.paper;
+                downloadLink.style.display = 'inline-block';
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function closePaperPreviewModal() {
+            const modal = document.getElementById('paperPreviewModal');
+            modal.style.display = 'none';
+            // Clear iframe src to stop loading
+            document.getElementById('previewPaperFrame').src = '';
+            document.getElementById('previewPaperImage').src = '';
+        }
+
+        // Submit All Modal Functions
+        function openSubmitAllModal() {
+            document.getElementById('submitAllModal').style.display = 'flex';
+            // Reset checkboxes
+            document.getElementById('confirmRubric').checked = false;
+            document.getElementById('confirmReview').checked = false;
+            document.getElementById('confirmFinal').checked = false;
+            checkAllConfirmations();
+        }
+
+        function closeSubmitAllModal() {
+            document.getElementById('submitAllModal').style.display = 'none';
+        }
+
+        function checkAllConfirmations() {
+            const rubricChecked = document.getElementById('confirmRubric').checked;
+            const reviewChecked = document.getElementById('confirmReview').checked;
+            const finalChecked = document.getElementById('confirmFinal').checked;
+            const submitBtn = document.getElementById('finalSubmitBtn');
+
+            if (rubricChecked && reviewChecked && finalChecked) {
+                submitBtn.disabled = false;
+                submitBtn.style.background = 'linear-gradient(135deg, #27ae60 0%, #229954 100%)';
+                submitBtn.style.cursor = 'pointer';
+                submitBtn.innerHTML = '✔️ Confirm & Submit';
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.style.background = '#95a5a6';
+                submitBtn.style.cursor = 'not-allowed';
+                submitBtn.innerHTML = '🔒 Confirm & Submit';
+            }
+        }
+
+        function showIncompleteWarning() {
+            const remaining = {{ $totalAssigned ?? 0 }} - {{ $completedReviews ?? 0 }};
+            const percentage = {{ $percentage ?? 0 }};
+
+            alert(
+                `⚠️ Evaluation Incomplete\\n\\nYou have ${remaining} participant(s) left to evaluate.\\n\\nCurrent Progress: ${percentage}%\\n\\nPlease complete all evaluations before submitting.`
+            );
+        }
+
+        function submitAllReviewerEvaluations() {
+            console.log('Submit All Evaluations function called');
+            const submitBtn = document.getElementById('finalSubmitBtn');
+            
+            if (!submitBtn) {
+                console.error('Submit button not found!');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ Submitting...';
+            submitBtn.style.background = '#95a5a6';
+            
+            console.log('Sending request to:', '{{ route('reviewer.submit-all', $registration->id) }}');
+
+            fetch('{{ route('reviewer.submit-all', $registration->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        confirm_rubric: true,
+                        confirm_review: true,
+                        confirm_final: true
+                    })
+                })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            // User-friendly error message
+                            const errorMsg = data.message || 'Unable to submit evaluations at this time. Please try again.';
+                            throw new Error(errorMsg);
+                        }).catch(jsonError => {
+                            // If JSON parsing fails, show generic error
+                            if (jsonError.message && !jsonError.message.includes('JSON')) {
+                                throw jsonError; // Re-throw if it's our custom error
+                            }
+                            throw new Error('Unable to submit evaluations. Please check your connection and try again.');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Response data:', data);
+                    if (data.success) {
+                        closeSubmitAllModal();
+                        showToast('success', '✅ Submission Successful', data.message, 3000);
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        throw new Error(data.message || 'Submission failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Submission error:', error);
+                    showToast('error', '❌ Submission Failed', error.message, 5000);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '✔️ Confirm & Submit';
+                    submitBtn.style.background = 'linear-gradient(135deg, #27ae60 0%, #229954 100%)';
+                });
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('submitAllModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSubmitAllModal();
+            }
+        });
     </script>
+
+    <!-- Paper Preview Modal -->
+    <div id="paperPreviewModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 12px; max-width: 1200px; width: 95%; max-height: 95vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <!-- Modal Header -->
+            <div style="padding: 1.5rem 2rem; border-bottom: 2px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px 12px 0 0;">
+                <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700;">📄 Paper Preview</h3>
+                <button type="button" onclick="closePaperPreviewModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; font-weight: 600; cursor: pointer; padding: 0.5rem 0.75rem; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                    ✕
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div style="padding: 1.5rem; flex: 1; overflow-y: auto;">
+                <!-- Paper Info -->
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #667eea;">
+                    <h4 id="previewPaperTitle" style="margin: 0 0 0.5rem 0; color: #2c3e50; font-size: 1.2rem;"></h4>
+                    <p id="previewPaperCategory" style="margin: 0; color: #7f8c8d; font-size: 0.9rem;"></p>
+                </div>
+                
+                <!-- Paper Preview Frame -->
+                <div id="previewPaperContainer" style="border: 2px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: #fff;">
+                    <iframe id="previewPaperFrame" style="width: 100%; height: 70vh; border: none; display: none;"></iframe>
+                    <img id="previewPaperImage" style="width: 100%; height: auto; display: none;" alt="Paper Preview">
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div style="padding: 1rem 1.5rem; border-top: 2px solid #e0e0e0; background: #f8f9fa; display: flex; gap: 0.75rem; justify-content: center; border-radius: 0 0 12px 12px;">
+                <a id="previewDownloadLink" href="#" download style="padding: 0.75rem 1.5rem; background: #27ae60; color: white; text-decoration: none; border-radius: 6px; font-size: 1rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1e8449'" onmouseout="this.style.background='#27ae60'">
+                    📥 Download Paper
+                </a>
+                <button type="button" onclick="closePaperPreviewModal()" style="padding: 0.75rem 1.5rem; background: #95a5a6; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#7f8c8d'" onmouseout="this.style.background='#95a5a6'">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit All Confirmation Modal -->
+    <div id="submitAllModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; overflow-y: auto; padding: 2rem 0;">
+        <div
+            style="background: white; border-radius: 16px; max-width: 800px; width: 95%; margin: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;">
+            <!-- Modal Header -->
+            <div
+                style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 1.5rem 2rem; border-radius: 16px 16px 0 0; position: sticky; top: 0; z-index: 10;">
+                <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700;">✔️ Confirm Evaluation Submission</h3>
+            </div>
+
+            <!-- Modal Body -->
+            <div style="padding: 2rem 2.5rem;">
+                <div
+                    style="background: #fff3cd; border-left: 4px solid #f39c12; padding: 1rem; margin-bottom: 1.5rem; border-radius: 6px;">
+                    <p style="margin: 0; color: #856404; font-size: 0.95rem; line-height: 1.6;">
+                        <strong>⚠️ Important:</strong> Once you submit all evaluations, they will be finalized and sent
+                        to the event organizer. Please review carefully before confirming.
+                    </p>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 1.75rem; border-radius: 8px; margin-bottom: 2rem;">
+                    <p style="margin: 0 0 0.75rem 0; color: #2c3e50; font-weight: 700; font-size: 1.05rem;">📊
+                        Evaluation Summary:</p>
+                    <p style="margin: 0.5rem 0; color: #555; font-size: 1rem;">• Total Participants:
+                        <strong>{{ $totalAssigned ?? 0 }}</strong>
+                    </p>
+                    <p style="margin: 0.5rem 0; color: #555; font-size: 1rem;">• Evaluations Completed:
+                        <strong>{{ $completedReviews ?? 0 }}</strong>
+                    </p>
+                    <p style="margin: 0.75rem 0 0 0; color: #27ae60; font-weight: 700; font-size: 1rem;">✅ All
+                        evaluations are ready for submission</p>
+                </div>
+
+                <!-- Confirmation Checkboxes -->
+                <div style="margin-bottom: 2rem;">
+                    <label
+                        style="display: flex; align-items: start; gap: 1rem; padding: 1.25rem; background: white; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 1.25rem; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.borderColor='#3498db'; this.style.background='#f0f9ff'"
+                        onmouseout="this.style.borderColor='#e5e7eb'; this.style.background='white'">
+                        <input type="checkbox" id="confirmRubric"
+                            style="width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;"
+                            onchange="checkAllConfirmations()">
+                        <span style="flex: 1; color: #2c3e50; line-height: 1.6; font-size: 1rem;">
+                            I confirm that I have evaluated all assigned participants using the provided rubric
+                            criteria and scoring system.
+                        </span>
+                    </label>
+
+                    <label
+                        style="display: flex; align-items: start; gap: 1rem; padding: 1.25rem; background: white; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 1.25rem; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.borderColor='#3498db'; this.style.background='#f0f9ff'"
+                        onmouseout="this.style.borderColor='#e5e7eb'; this.style.background='white'">
+                        <input type="checkbox" id="confirmReview"
+                            style="width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;"
+                            onchange="checkAllConfirmations()">
+                        <span style="flex: 1; color: #2c3e50; line-height: 1.6; font-size: 1rem;">
+                            I have reviewed my evaluations and confirm that all scores and comments are accurate
+                            and fair.
+                        </span>
+                    </label>
+
+                    <label
+                        style="display: flex; align-items: start; gap: 1rem; padding: 1.25rem; background: white; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 1.25rem; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.borderColor='#3498db'; this.style.background='#f0f9ff'"
+                        onmouseout="this.style.borderColor='#e5e7eb'; this.style.background='white'">
+                        <input type="checkbox" id="confirmFinal"
+                            style="width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;"
+                            onchange="checkAllConfirmations()">
+                        <span style="flex: 1; color: #2c3e50; line-height: 1.6; font-size: 1rem;">
+                            I understand that after submission, I will not be able to edit these evaluations.
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1.5rem; margin-top: 2rem;">
+                    <button onclick="closeSubmitAllModal()"
+                        style="flex: 1; padding: 1rem 2rem; background: #95a5a6; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.background='#7f8c8d'"
+                        onmouseout="this.style.background='#95a5a6'">
+                        Cancel
+                    </button>
+                    <button id="finalSubmitBtn" onclick="submitAllReviewerEvaluations()" disabled
+                        style="flex: 1; padding: 1rem 2rem; background: #95a5a6; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: not-allowed; transition: all 0.3s;">
+                        🔒 Confirm & Submit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Notification Container (at end for highest stacking) -->
     <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>

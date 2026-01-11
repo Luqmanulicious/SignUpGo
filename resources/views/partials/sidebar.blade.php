@@ -26,20 +26,20 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="{{ route('account.index') }}" class="nav-link {{ request()->routeIs('account.*') ? 'active' : '' }}">
-                👤 <span>Account</span>
-            </a>
-        </li>
-        <li class="nav-item">
             <a href="{{ route('certificates.index') }}" class="nav-link {{ request()->routeIs('certificates.*') ? 'active' : '' }}">
                 🎓 <span>My Certificates</span>
             </a>
         </li>
         <li class="nav-item">
+            <a href="{{ route('account.index') }}" class="nav-link {{ request()->routeIs('account.*') ? 'active' : '' }}">
+                👤 <span>Account</span>
+            </a>
+        </li>
+        {{-- <li class="nav-item">
             <a href="{{ route('mailbox.index') }}" class="nav-link {{ request()->routeIs('mailbox.*') ? 'active' : '' }}">
                 📧 <span>Mail box</span>
             </a>
-        </li>
+        </li> --}}
         {{-- <li class="nav-item">
             <a href="#" class="nav-link">
                 ⚙️ <span>Settings</span>

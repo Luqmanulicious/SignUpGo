@@ -60,6 +60,9 @@ class RegisterController extends Controller
                 $result = $cloudinary->upload($request->file('certificate'), 'certificates', [
                     'public_id' => 'certificate_temp_' . time(),
                     'tags' => ['certificate', 'registration'],
+                    'resource_type' => 'raw',
+                    'use_filename' => false,
+                    'unique_filename' => false,
                 ]);
                 $userData['certificate_path'] = $result['secure_url'];
             }
@@ -70,6 +73,9 @@ class RegisterController extends Controller
                 $result = $cloudinary->upload($request->file('resume'), 'resumes', [
                     'public_id' => 'resume_temp_' . time(),
                     'tags' => ['resume', 'registration'],
+                    'resource_type' => 'raw',
+                    'use_filename' => false,
+                    'unique_filename' => false,
                 ]);
                 $userData['resume_path'] = $result['secure_url'];
             }

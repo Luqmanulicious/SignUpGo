@@ -33,15 +33,12 @@ class CloudinaryService
     public function upload(UploadedFile $file, string $folder = 'uploads', array $options = []): array
     {
         try {
-            // Default options
+            // Default options (will be overridden by $options)
             $defaultOptions = [
                 'folder' => $folder,
-                'resource_type' => 'auto',
-                'use_filename' => true,
-                'unique_filename' => true,
             ];
 
-            // Merge with custom options (custom options can override defaults)
+            // Merge with custom options (custom options override defaults)
             $uploadOptions = array_merge($defaultOptions, $options);
 
             // Upload to Cloudinary
@@ -54,6 +51,8 @@ class CloudinaryService
                 'public_id' => $result['public_id'],
                 'url' => $result['secure_url'],
                 'folder' => $folder,
+                'format' => $result['format'] ?? 'unknown',
+                'resource_type' => $result['resource_type'] ?? 'unknown',
             ]);
 
             return [
@@ -82,9 +81,15 @@ class CloudinaryService
      */
     public function uploadCertificate(UploadedFile $file, int $userId): array
     {
+        $extension = strtolower($file->getClientOriginalExtension());
+        $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
+        
         return $this->upload($file, 'certificates', [
             'public_id' => 'certificate_' . $userId . '_' . time(),
             'tags' => ['certificate', 'user_' . $userId],
+            'resource_type' => $isImage ? 'image' : 'raw',
+            'use_filename' => false,
+            'unique_filename' => false,
         ]);
     }
 
@@ -115,7 +120,14 @@ class CloudinaryService
      */
     public function uploadPdf(UploadedFile $file, string $folder = 'documents', array $options = []): array
     {
-        return $this->upload($file, $folder, $options);
+        $extension = strtolower($file->getClientOriginalExtension());
+        $defaultOptions = [
+            'resource_type' => 'raw',
+            'use_filename' => false,
+            'unique_filename' => false,
+        ];
+        
+        return $this->upload($file, $folder, array_merge($defaultOptions, $options));
     }
 
     /**
@@ -127,9 +139,14 @@ class CloudinaryService
      */
     public function uploadResume(UploadedFile $file, int $userId): array
     {
+        $extension = strtolower($file->getClientOriginalExtension());
+        
         return $this->upload($file, 'resumes', [
             'public_id' => 'resume_' . $userId . '_' . time(),
             'tags' => ['resume', 'user_' . $userId],
+            'resource_type' => 'raw',
+            'use_filename' => false,
+            'unique_filename' => false,
         ]);
     }
 
@@ -156,7 +173,8 @@ class CloudinaryService
     }
 
     /**
-     * Upload a paper poster
+     * Upload a paper poster (for innovation) or paper document (for conference)
+     * Handles images (JPG, PNG) and documents (DOC, DOCX, PDF)
      * 
      * @param UploadedFile $file
      * @param int $userId
@@ -165,9 +183,30 @@ class CloudinaryService
      */
     public function uploadPoster(UploadedFile $file, int $userId, int $eventId): array
     {
+        // Get the original file extension to preserve it
+        $originalExtension = strtolower($file->getClientOriginalExtension());
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        
+        // Sanitize filename (remove special characters)
+        $sanitizedName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $originalName);
+        
+        // Create public_id WITHOUT extension (Cloudinary adds it automatically)
+        $publicId = 'poster_' . $eventId . '_' . $userId . '_' . time() . '_' . $sanitizedName;
+        
+        // Determine resource type based on file extension
+        $resourceType = 'raw'; // Default to raw for documents
+        $isImage = in_array($originalExtension, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
+        
+        if ($isImage) {
+            $resourceType = 'image';
+        }
+        
         return $this->upload($file, 'posters', [
-            'public_id' => 'poster_' . $eventId . '_' . $userId . '_' . time(),
+            'public_id' => $publicId,
             'tags' => ['poster', 'event_' . $eventId, 'user_' . $userId],
+            'resource_type' => $resourceType,
+            'use_filename' => false,
+            'unique_filename' => false,
         ]);
     }
 
@@ -181,9 +220,15 @@ class CloudinaryService
      */
     public function uploadPaymentReceipt(UploadedFile $file, int $registrationId, int $eventId): array
     {
+        $extension = strtolower($file->getClientOriginalExtension());
+        $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
+        
         return $this->upload($file, 'payment-receipts', [
             'public_id' => 'payment_receipt_' . $eventId . '_' . $registrationId . '_' . time(),
             'tags' => ['payment_receipt', 'event_' . $eventId, 'registration_' . $registrationId],
+            'resource_type' => $isImage ? 'image' : 'raw',
+            'use_filename' => false,
+            'unique_filename' => false,
         ]);
     }
 

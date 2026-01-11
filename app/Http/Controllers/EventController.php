@@ -3,10 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Services\EventRecommendationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class EventController extends Controller
 {
+    protected $recommendationService;
+
+    public function __construct(EventRecommendationService $recommendationService)
+    {
+        $this->recommendationService = $recommendationService;
+    }
+
     public function index(Request $request)
     {
         $query = Event::query()->published();
@@ -51,7 +61,41 @@ class EventController extends Controller
         // Get categories for filter dropdown
         $categories = \App\Models\EventCategory::orderBy('name')->get();
         
-        return view('events.index', compact('events', 'categories'));
+        // Get AI recommendations for logged-in users (only if no search/filters applied)
+        $recommendedEvents = collect();
+        if (Auth::check() && !$request->hasAny(['search', 'category', 'type', 'date_from', 'date_to'])) {
+            try {
+                Log::info('Starting AI recommendation fetch for user: ' . Auth::id());
+                
+                // Fetch upcoming events (events that haven't ended yet)
+                $upcomingEvents = Event::query()
+                    ->published()
+                    ->where(function($q) {
+                        $q->whereNull('end_date')
+                          ->orWhere('end_date', '>=', now());
+                    })
+                    ->where('start_date', '>=', now())
+                    ->with('category')
+                    ->orderBy('start_date', 'asc')
+                    ->get();
+
+                Log::info('Upcoming events count: ' . $upcomingEvents->count());
+
+                // Get recommendations from AI service
+                if ($upcomingEvents->isNotEmpty()) {
+                    $recommendedEvents = $this->recommendationService->getRecommendations(
+                        Auth::user(),
+                        $upcomingEvents
+                    );
+                    Log::info('Recommended events count: ' . $recommendedEvents->count());
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to get event recommendations: ' . $e->getMessage());
+                // Continue without recommendations
+            }
+        }
+        
+        return view('events.index', compact('events', 'categories', 'recommendedEvents'));
     }
 
     public function show(Event $event)

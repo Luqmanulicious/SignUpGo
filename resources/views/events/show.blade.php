@@ -267,10 +267,221 @@
                 border-radius: 0 0 8px 8px;
             }
         }
+
+        /* Profile Section */
+        .profile-section {
+            position: fixed !important;
+            top: 1rem !important;
+            right: 1rem !important;
+            left: auto !important;
+            z-index: 10000 !important;
+        }
+
+        .profile-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            padding: 0.4rem 0.8rem 0.4rem 0.4rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 200px;
+        }
+
+        .profile-button:hover {
+            border-color: #3498db;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .profile-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .profile-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.85rem;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+
+        .profile-email {
+            font-size: 0.7rem;
+            color: #7f8c8d;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+
+        .profile-dropdown {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            min-width: 220px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .profile-section.active .profile-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .profile-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #2c3e50;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .profile-dropdown-item:first-child {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .profile-dropdown-item:last-child {
+            border-bottom: none;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .profile-dropdown-item:hover {
+            background: #f8f9fa;
+            padding-left: 1.25rem;
+        }
+
+        .profile-dropdown-item.logout {
+            color: #e74c3c;
+        }
+
+        .profile-dropdown-item.logout:hover {
+            background: #fee;
+        }
+
+        .profile-dropdown-icon {
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .profile-section {
+                top: 0.5rem;
+                right: 0.5rem;
+            }
+
+            .profile-info {
+                display: none;
+            }
+
+            .profile-button {
+                padding: 0.5rem;
+            }
+        }
     </style>
 @endsection
 
 @section('content')
+    <!-- Profile Section -->
+    @auth
+    <div class="profile-section" id="profileSection">
+        <div class="profile-button" onclick="toggleProfile()">
+            <div class="profile-avatar">
+                @if(Auth::user()->profile_picture)
+                    <img src="{{ Auth::user()->profile_picture }}" alt="{{ Auth::user()->name }}">
+                @else
+                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                @endif
+            </div>
+            <div class="profile-info">
+                <div class="profile-name">{{ Auth::user()->name }}</div>
+                <div class="profile-email">{{ Auth::user()->email }}</div>
+            </div>
+        </div>
+
+        <div class="profile-dropdown">
+            <a href="{{ route('dashboard') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">🏠</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ route('account.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">👤</span>
+                <span>My Account</span>
+            </a>
+            <a href="{{ route('registrations.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">📝</span>
+                <span>My Registrations</span>
+            </a>
+            <a href="{{ route('events.index') }}" class="profile-dropdown-item">
+                <span class="profile-dropdown-icon">🎫</span>
+                <span>Browse Events</span>
+            </a>
+            <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
+                @csrf
+                <button type="submit" class="profile-dropdown-item logout" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: 1rem; font-family: inherit;">
+                    <span class="profile-dropdown-icon">🚪</span>
+                    <span>Logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleProfile() {
+            const profileSection = document.getElementById('profileSection');
+            profileSection.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const profileSection = document.getElementById('profileSection');
+            if (!profileSection.contains(event.target)) {
+                profileSection.classList.remove('active');
+            }
+        });
+    </script>
+    @endauth
+
     <div class="container">
         <a href="{{ route('events.index') }}" class="back-link">← Back to events</a>
 
@@ -524,23 +735,23 @@
                         $hasPaperDeadline = false;
                         $paperDeadlineText = '';
 
-                        if ($event->delivery_mode === 'face_to_face' && $event->f2f_paper_submission_deadline) {
+                        if ($event->delivery_mode === 'face_to_face' && $event->f2f_paper_deadline) {
                             $hasPaperDeadline = true;
-                            $paperDeadlineText = \Carbon\Carbon::parse($event->f2f_paper_submission_deadline)->format(
+                            $paperDeadlineText = \Carbon\Carbon::parse($event->f2f_paper_deadline)->format(
                                 'F d, Y h:i A',
                             );
-                        } elseif ($event->delivery_mode === 'online' && $event->online_paper_submission_deadline) {
+                        } elseif ($event->delivery_mode === 'online' && $event->online_paper_deadline) {
                             $hasPaperDeadline = true;
-                            $paperDeadlineText = \Carbon\Carbon::parse($event->online_paper_submission_deadline)->format(
+                            $paperDeadlineText = \Carbon\Carbon::parse($event->online_paper_deadline)->format(
                                 'F d, Y h:i A',
                             );
                         } elseif ($event->delivery_mode === 'hybrid') {
                             $hasPaperDeadline = true;
-                            $f2fDeadline = $event->f2f_paper_submission_deadline
-                                ? \Carbon\Carbon::parse($event->f2f_paper_submission_deadline)->format('F d, Y h:i A')
+                            $f2fDeadline = $event->f2f_paper_deadline
+                                ? \Carbon\Carbon::parse($event->f2f_paper_deadline)->format('F d, Y h:i A')
                                 : null;
-                            $onlineDeadline = $event->online_paper_submission_deadline
-                                ? \Carbon\Carbon::parse($event->online_paper_submission_deadline)->format('F d, Y h:i A')
+                            $onlineDeadline = $event->online_paper_deadline
+                                ? \Carbon\Carbon::parse($event->online_paper_deadline)->format('F d, Y h:i A')
                                 : null;
 
                             if ($f2fDeadline && $onlineDeadline) {
@@ -554,11 +765,11 @@
                             }
                         } else {
                             // For events without delivery_mode set (e.g., conference events)
-                            $f2fDeadline = $event->f2f_paper_submission_deadline
-                                ? \Carbon\Carbon::parse($event->f2f_paper_submission_deadline)->format('F d, Y h:i A')
+                            $f2fDeadline = $event->f2f_paper_deadline
+                                ? \Carbon\Carbon::parse($event->f2f_paper_deadline)->format('F d, Y h:i A')
                                 : null;
-                            $onlineDeadline = $event->online_paper_submission_deadline
-                                ? \Carbon\Carbon::parse($event->online_paper_submission_deadline)->format('F d, Y h:i A')
+                            $onlineDeadline = $event->online_paper_deadline
+                                ? \Carbon\Carbon::parse($event->online_paper_deadline)->format('F d, Y h:i A')
                                 : null;
 
                             if ($f2fDeadline && $onlineDeadline) {
@@ -981,21 +1192,6 @@
                         @endif
                     </p>
                 </div>
-
-                @if ($event->max_participants)
-                    <div class="slots-info">
-                        <div>
-                            <div class="label">Total Capacity</div>
-                            <div class="value">{{ $event->max_participants }}</div>
-                        </div>
-                    </div>
-                @else
-                    <div
-                        style="padding: 1rem; background: #e8f5e9; border-radius: 6px; margin-bottom: 1rem; text-align: center;">
-                        <div style="font-size: 1.2rem; font-weight: bold; color: #1b5e20;">♾️ Unlimited Slots</div>
-                        <div style="font-size: 0.85rem; color: #2e7d32; margin-top: 0.25rem;">Everyone can join!</div>
-                    </div>
-                @endif
 
                 @php
                     // Get all user registrations for this event (can be multiple roles)
@@ -1699,4 +1895,46 @@
             </div>
         </div>
     </div>
+
+    {{-- Event Organizer Details Section --}}
+    @if ($event->organizer)
+        <div class="container" style="margin-top: 2rem; margin-bottom: 2rem;">
+            <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);">
+                <h3 style="color: #2c3e50; margin: 0 0 1.5rem 0; font-size: 1.5rem; border-bottom: 2px solid #3498db; padding-bottom: 0.75rem;">
+                    📋 Event Organizer Information
+                </h3>
+                <div style="display: grid; gap: 1rem;">
+                    <div style="display: flex; align-items: start; gap: 1rem;">
+                        <div style="color: #3498db; font-size: 1.5rem; width: 30px; flex-shrink: 0;">👤</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: #7f8c8d; font-size: 0.85rem; margin-bottom: 0.25rem;">Organization Name</div>
+                            <div style="color: #2c3e50; font-size: 1.1rem; font-weight: 500;">{{ $event->organizer->org_name }}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; align-items: start; gap: 1rem;">
+                        <div style="color: #3498db; font-size: 1.5rem; width: 30px; flex-shrink: 0;">✉️</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: #7f8c8d; font-size: 0.85rem; margin-bottom: 0.25rem;">Email</div>
+                            <a href="mailto:{{ $event->organizer->org_email }}" style="color: #3498db; text-decoration: none; font-size: 1rem; hover: text-decoration: underline;">
+                                {{ $event->organizer->org_email }}
+                            </a>
+                        </div>
+                    </div>
+                    
+                    @if ($event->organizer->phone)
+                        <div style="display: flex; align-items: start; gap: 1rem;">
+                            <div style="color: #3498db; font-size: 1.5rem; width: 30px; flex-shrink: 0;">📞</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #7f8c8d; font-size: 0.85rem; margin-bottom: 0.25rem;">Phone Number</div>
+                                <a href="tel:{{ $event->organizer->phone }}" style="color: #3498db; text-decoration: none; font-size: 1rem;">
+                                    {{ $event->organizer->phone }}
+                                </a>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
 @endsection

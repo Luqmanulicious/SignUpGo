@@ -15,9 +15,32 @@
 
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #88a3fa 0%, #0f0072 100%);
             min-height: 100vh;
             padding: 2rem;
+        }
+
+        .back-btn-wrapper {
+            max-width: 1400px;
+            margin: 0 auto 1rem auto;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #2c3e50;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .back-btn:hover {
+            background: #34495e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .container {
@@ -30,7 +53,7 @@
         }
 
         .header {
-            background: linear-gradient(135deg, {{ !is_null($registration->evaluations_submitted_at) ? '#6c757d 0%, #495057 100%' : '#667eea 0%, #764ba2 100%' }});
+            background: linear-gradient(135deg, {{ !is_null($registration->evaluations_submitted_at) ? '#6c757d 0%, #495057 100%' : '#2c3e50 0%, #3498db 100%' }});
             color: white;
             padding: 2rem;
             text-align: center;
@@ -597,6 +620,11 @@
 <body>
     <div class="container">
         
+        <div class="back-btn-wrapper">
+            <a href="{{ route('events.jury-dashboard', $registration->id) }}" class="back-btn">
+                ← Back to Jury Dashboard
+            </a>
+        </div>
         <div class="header">
             <h1>📊 {{ !is_null($registration->evaluations_submitted_at) ? '🔒 View Evaluation (Read-Only)' : (!empty($existingScores) ? 'Edit' : 'Save') . ' Evaluation' }}</h1>
             <p>{{ $event->name }}</p>
@@ -606,9 +634,6 @@
                 </p>
             @endif
         </div>
-        <a href="{{ route('events.jury-dashboard', $registration->id) }}" class="back-btn">
-            ← Back to Jury Dashboard
-        </a>
         
         @if(!is_null($registration->evaluations_submitted_at))
             <div style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; padding: 1rem 2rem; margin: 1rem 2rem; border-radius: 8px; text-align: center; font-weight: 600;">
@@ -792,6 +817,51 @@
                         </div>
                     @endforeach
 
+                    <!-- Overall Comments Section -->
+                    <div class="rubric-category" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9;">
+                        <div class="category-header">
+                            <div class="category-name" style="color: #0c4a6e; font-size: 1.3rem;">💬 Overall Evaluation Comments</div>
+                            <div class="category-description" style="color: #075985;">Provide your overall assessment and feedback for all criteria and aspects evaluated above.</div>
+                        </div>
+                        <div style="margin-top: 1.5rem;">
+                            <label class="category-comment-label" style="color: #0c4a6e;">General Comments (Optional)</label>
+                            <textarea name="overall_comments" class="comment-field" rows="6"
+                                placeholder="Add your overall evaluation comments here - summarize strengths, weaknesses, and recommendations..."
+                                style="border: 2px solid #0ea5e9;"
+                                {{ !is_null($registration->evaluations_submitted_at) ? 'readonly style="background: #f5f5f5; cursor: not-allowed; border: 2px solid #94a3b8;"' : '' }}>{{ $overallComments ?? '' }}</textarea>
+                        </div>
+                    </div>
+
+                    @php
+                        $totalMaxScore = 0;
+                        $totalCurrentScore = 0;
+                        foreach ($rubricCategories as $category) {
+                            foreach ($category->items as $item) {
+                                $totalMaxScore += $item->max_score ?? 5;
+                                $totalCurrentScore += $existingScores[$item->id] ?? 0;
+                            }
+                        }
+                        $percentage = $totalMaxScore > 0 ? round(($totalCurrentScore / $totalMaxScore) * 100, 1) : 0;
+                    @endphp
+
+                    <!-- Total Score Display -->
+                    <div style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; color: white; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;">Total Evaluation Score</div>
+                                <div style="font-size: 2rem; font-weight: 700;">
+                                    <span id="currentTotalScore">{{ $totalCurrentScore }}</span> / <span id="maxTotalScore">{{ $totalMaxScore }}</span>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;">Percentage</div>
+                                <div style="font-size: 2rem; font-weight: 700;">
+                                    <span id="totalPercentage">{{ $percentage }}</span>%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     @if(is_null($registration->evaluations_submitted_at))
                         <div class="submit-section">
                             <button type="submit" class="submit-btn" id="submitBtn">
@@ -883,6 +953,37 @@
 
             // Update hidden input
             document.getElementById(`score_${itemId}`).value = score;
+            
+            // Update total score display
+            updateTotalScore();
+        }
+        
+        function updateTotalScore() {
+            let currentTotal = 0;
+            let maxTotal = 0;
+            
+            // Calculate totals from all score inputs
+            document.querySelectorAll('input[name^="scores["]').forEach(input => {
+                const itemId = input.id.replace('score_', '');
+                const scoreButtons = document.querySelectorAll(`.score-btn[data-item-id="${itemId}"]`);
+                
+                // Get max score from buttons
+                if (scoreButtons.length > 0) {
+                    maxTotal += scoreButtons.length - 1; // -1 because scores start from 0
+                }
+                
+                // Get current score
+                const score = parseInt(input.value) || 0;
+                currentTotal += score;
+            });
+            
+            // Update display
+            document.getElementById('currentTotalScore').textContent = currentTotal;
+            document.getElementById('maxTotalScore').textContent = maxTotal;
+            
+            // Update percentage
+            const percentage = maxTotal > 0 ? ((currentTotal / maxTotal) * 100).toFixed(1) : 0;
+            document.getElementById('totalPercentage').textContent = percentage;
         }
 
         function showScoreDescription(itemId, score, button) {

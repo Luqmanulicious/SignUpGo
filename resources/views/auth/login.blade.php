@@ -23,8 +23,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: url('https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1920&q=80') no-repeat center center/cover;
-            filter: blur(8px);
+            background:
+                linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+                url('{{ asset('images/background3.png') }}') no-repeat center center/cover;
             z-index: -1;
         }
 
@@ -35,7 +36,7 @@
             padding: 3rem;
             text-align: center;
             color: white;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            box-shadow: none;
             width: 90%;
             max-width: 420px;
         }
@@ -52,7 +53,7 @@
         h1 {
             margin-bottom: 1.5rem;
             font-size: 1.8rem;
-            color: black;
+            color: white;
         }
 
         .form-group {
@@ -65,13 +66,15 @@
             display: block;
             margin-bottom: 0.5rem;
             font-size: 0.9rem;
-            color: black;
+            color: white;
+            font-weight: 600;
         }
 
         .form-group input {
             width: 100%;
             padding: 0.8rem;
-            padding-right: 45px; /* Make room for eye icon */
+            padding-right: 45px;
+            /* Make room for eye icon */
             border: none;
             border-radius: 10px;
             background: rgba(255, 255, 255, 0.9);
@@ -169,18 +172,18 @@
         }
 
         .btn:hover {
-            background-color: #000;
+            background-color: #1261ff;
             color: #fff;
         }
 
         .links {
             font-size: 0.9rem;
             margin-top: 1rem;
-            color: black;
+            color: white;
         }
 
         .links a {
-            color: black;
+            color: rgb(13, 255, 0);
             text-decoration: none;
             font-weight: 600;
         }
@@ -225,11 +228,12 @@
             <div class="form-group">
                 <label for="password">Password<span class="required">*</span></label>
                 <input type="password" id="password" name="password" required>
-                <button type="button" class="toggle-password" onclick="togglePassword()" aria-label="Toggle password visibility">
+                <button type="button" class="toggle-password" onclick="togglePassword()"
+                    aria-label="Toggle password visibility">
                     <span class="eye-icon">
                         <svg viewBox="0 0 24 24">
-                            <path d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7z"/>
-                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7z" />
+                            <circle cx="12" cy="12" r="3" />
                         </svg>
                     </span>
                     <span class="eye-slash"></span>
@@ -248,7 +252,7 @@
         function togglePassword() {
             const passwordField = document.getElementById("password");
             const toggleButton = document.querySelector(".toggle-password");
-            
+
             if (passwordField.type === "password") {
                 passwordField.type = "text";
                 toggleButton.classList.add("showing");

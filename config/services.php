@@ -41,4 +41,8 @@ return [
         'notification_url' => env('CLOUDINARY_NOTIFICATION_URL'),
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+    ],
+
 ];
